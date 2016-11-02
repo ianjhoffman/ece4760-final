@@ -33,12 +33,14 @@ volatile unsigned int saw_table[WAVE_TABLE_SIZE];
 #define WAVE_BLEND(sample1, sample2, blend) (((255 - blend) * (sample1 >> 8)) + (blend * (sample2 >> 8)))
 
 // TEST VALUES FOR MORPH TEST
-#define TEST_PHASE_INC (2 << 32)
+#define TEST_PHASE_INC 4000000
 #define TEST_BLEND_AMT 128
-#define TEST_BLEND_INC 8192
+//#define TEST_BLEND_INC 50000
+#define TEST_BLEND_INC 70480000
 
 // the DDS units
-volatile unsigned long phase_acc = 0; // synthesis phase acc
+//volatile unsigned long phase_acc = 0; // synthesis phase acc
+volatile unsigned int phase_acc = 0; // synthesis phase acc
 volatile unsigned char blend = TEST_BLEND_AMT;
 
 // A-channel, 1x, active
@@ -157,30 +159,32 @@ volatile int spiClkDiv = 2 ; // 20 MHz max speed for this DAC
 volatile unsigned int counter = 0; // FOR TESTING
 volatile unsigned int blender = 0;  // FOR TESTING
 
+volatile unsigned int blend_inc = TEST_BLEND_INC;
+volatile signed short blend_mod_inc = 250;
+
 void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 {
     mT2ClearIntFlag();
     SS = 0; // CS low during write
             
-//    DAC_data = WAVE_BLEND(tri_table[phase_acc>>55], 
-//                          saw_table[phase_acc>>55],
-//                          blend) >> 20;
-    
-    blend = (blender >> 24);
-    
-    DAC_data = WAVE_BLEND(tri_table[counter>>3], 
-                          saw_table[counter>>3],
-                          blend) >> 20;
-    
-    // DAC_data = counter;
+    DAC_data = WAVE_BLEND(tri_table[phase_acc>>23], 
+                          saw_table[phase_acc>>23],
+                          (blender >> 24)) >> 20;
     
     WriteSPI2( DAC_config_chan_A | DAC_data );
     
     // Update phase accumulator
-    // phase_acc += TEST_PHASE_INC;
+    phase_acc += TEST_PHASE_INC;
     
     counter = (counter > 4095) ? 0 : (counter + 1);
-    blender += TEST_BLEND_INC;
+    blender += blend_inc;
+    
+    blend_inc += blend_mod_inc;
+    if ((blend_inc - TEST_BLEND_INC) > 50000000
+        || blend_inc < TEST_BLEND_INC) {
+        // reverse dir
+        blend_mod_inc = -blend_mod_inc;
+    }
 
     // test for ready
     while (TxBufFullSPI2());
