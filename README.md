@@ -1,4 +1,4 @@
-# ECE 4760 Lab 2
+# ECE 4760 Final Project
 
 ## A Quick Git Guide:
 
@@ -15,9 +15,9 @@ for discovering which directoreis you can `cd` to.
 what directory you are starting in/if you have navigated to the right place.
  4. Typing `cd ..` will change your directory up one level. If you are in `Desktop/projects`, 
 typing `cd ..` will change your cwd to `Desktop`.
-4. Type this command: `git clone https://github.com/enjmusic/ece4760-lab2.git`.
+4. Type this command: `git clone https://github.com/enjmusic/ece4760-final.git`.
 5. Once the printout stops for the `git clone` command, you should have a copy of the repo on
-your local machine. `cd` to it using `cd ece4760-lab2`.
+your local machine. `cd` to it using `cd ece4760-final`.
 
 ### Pushing/pulling changes:
 
