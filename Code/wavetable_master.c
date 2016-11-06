@@ -16,6 +16,9 @@
 #include <plib.h>
 #include "pt_cornell_TFT.h"
 
+// Include basic 8 waveform table
+#include "Basic8Tab.h"
+
 // fix16 definition
 typedef signed int fix16 ;
 
@@ -25,8 +28,8 @@ typedef signed int fix16 ;
 
 // DMA blend tri/saw test tables
 #define WAVE_TABLE_SIZE 512
-volatile unsigned int tri_table[WAVE_TABLE_SIZE];
-volatile unsigned int saw_table[WAVE_TABLE_SIZE];
+//volatile unsigned int tri_table[WAVE_TABLE_SIZE];
+//volatile unsigned int saw_table[WAVE_TABLE_SIZE];
 //#define exp_table_size 1000
 //volatile fix16 exp_table[exp_table_size]; 
 
@@ -34,14 +37,13 @@ volatile unsigned int saw_table[WAVE_TABLE_SIZE];
 
 // TEST VALUES FOR MORPH TEST
 #define TEST_PHASE_INC 4000000
-#define TEST_BLEND_AMT 128
-//#define TEST_BLEND_INC 50000
-#define TEST_BLEND_INC 70480000
+#define TEST_BLEND_INC 5000
+//#define TEST_BLEND_INC 70480000
 
 // the DDS units
 //volatile unsigned long phase_acc = 0; // synthesis phase acc
 volatile unsigned int phase_acc = 0; // synthesis phase acc
-volatile unsigned char blend = TEST_BLEND_AMT;
+volatile unsigned int blend = 0;
 
 // A-channel, 1x, active
 #define DAC_config_chan_A 0b0011000000000000
@@ -64,22 +66,22 @@ char buffer[60];
 // PORT B
 #define EnablePullDownB(bits) CNPUBCLR=bits; CNPDBSET=bits;
 
-void table_generation()
-{
-    /*
-     * For testing:
-     * Generate saw and tri tables
-     */
-    int i;
-    for (i = 0; i < WAVE_TABLE_SIZE; i++) {
-        saw_table[i] = ((WAVE_TABLE_SIZE - 1) - i) << 23; // ramp down
-        tri_table[i] = (i < (WAVE_TABLE_SIZE >> 1)) ? 
-                            (i << 24)
-                        :
-                            -((i - (WAVE_TABLE_SIZE >> 1)) << 24) - 1
-                        ;
-    }
-}
+//void table_generation()
+//{
+//    /*
+//     * For testing:
+//     * Generate saw and tri tables
+//     */
+//    int i;
+//    for (i = 0; i < WAVE_TABLE_SIZE; i++) {
+//        saw_table[i] = ((WAVE_TABLE_SIZE - 1) - i) << 23; // ramp down
+//        tri_table[i] = (i < (WAVE_TABLE_SIZE >> 1)) ? 
+//                            (i << 24)
+//                        :
+//                            -((i - (WAVE_TABLE_SIZE >> 1)) << 24) - 1
+//                        ;
+//    }
+//}
 
 // SPI SETUP FOR DAC
 #define config1 SPI_MODE16_ON | SPI_CKE_ON | MASTER_ENABLE_ON
@@ -156,35 +158,39 @@ volatile unsigned int DAC_data ;// output value
 volatile SpiChannel spiChn = SPI_CHANNEL2 ;	// the SPI channel to use
 volatile int spiClkDiv = 2 ; // 20 MHz max speed for this DAC
 //volatile uint8_t index; //indices for sine table
-volatile unsigned int counter = 0; // FOR TESTING
-volatile unsigned int blender = 0;  // FOR TESTING
-
-volatile unsigned int blend_inc = TEST_BLEND_INC;
-volatile signed short blend_mod_inc = 250;
+//volatile unsigned int counter = 0; // FOR TESTING
+//volatile unsigned int blender = 0;  // FOR TESTING
+//
+//volatile unsigned int blend_inc = TEST_BLEND_INC;
+//volatile signed short blend_mod_inc = 250;
+volatile unsigned int tab1_offset;
+volatile unsigned int tab2_offset;
+volatile unsigned int blender;
 
 void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 {
     mT2ClearIntFlag();
     SS = 0; // CS low during write
-            
-    DAC_data = WAVE_BLEND(tri_table[phase_acc>>23], 
-                          saw_table[phase_acc>>23],
-                          (blender >> 24)) >> 20;
+    
+    // Get blend value
+    blender = blend >> 21; // Get top 11 bits
+    
+    // Get sub-tables to blend between
+    tab1_offset = ((blender & 0x700)) << 1;
+    tab2_offset = ((blender & 0x700) + 0x100) << 1;
+    
+    // Get sample to write
+    // index of blend is bottom 8 bits of blend
+    DAC_data = WAVE_BLEND(((basic_eight + tab1_offset)[phase_acc>>23]), 
+                          ((basic_eight + tab2_offset)[phase_acc>>23]),
+                          (blender & 0xff)) >> 20;
     
     WriteSPI2( DAC_config_chan_A | DAC_data );
     
     // Update phase accumulator
     phase_acc += TEST_PHASE_INC;
-    
-    counter = (counter > 4095) ? 0 : (counter + 1);
-    blender += blend_inc;
-    
-    blend_inc += blend_mod_inc;
-    if ((blend_inc - TEST_BLEND_INC) > 50000000
-        || blend_inc < TEST_BLEND_INC) {
-        // reverse dir
-        blend_mod_inc = -blend_mod_inc;
-    }
+    blend += TEST_BLEND_INC;
+    if ((blend >> 29) > 6) blend = 0; // Don't flow into 8 -> 9 fade, that's bad
 
     // test for ready
     while (TxBufFullSPI2());
@@ -197,7 +203,7 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 // === thread structures ============================================
 // thread control structs
 // note that UART input and output are threads
-static struct pt pt_timer, pt_color, pt_anim, pt_key ;
+static struct pt pt_timer;
 
 // system 1 second interval tick
 int sys_time_seconds ;
@@ -219,7 +225,7 @@ static PT_THREAD (protothread_timer(struct pt *pt))
         tft_fillRoundRect(0,10, 100, 14, 1, ILI9340_BLACK);
         tft_setCursor(0, 10);
         tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-        sprintf(buffer,"%d", sys_time_seconds);
+        sprintf(buffer, "%d", sys_time_seconds);
         tft_writeString(buffer);
     }
   PT_END(pt);
@@ -257,7 +263,7 @@ void main(void) {
     mT2ClearIntFlag(); // and clear the interrupt flag
 
     initDAC();
-    table_generation();
+    // table_generation();
 
     // round-robin scheduler for threads
     while (1) {
