@@ -9,6 +9,8 @@
       <itemPath>config.h</itemPath>
       <itemPath>pt_cornell_TFT.h</itemPath>
       <itemPath>Basic8Tab.h</itemPath>
+      <itemPath>SawSyncEnv.h</itemPath>
+      <itemPath>freq_to_accum.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"

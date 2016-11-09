@@ -18,6 +18,9 @@
 
 // Include basic 8 waveform table
 #include "Basic8Tab.h"
+// #include "SawSyncEnv.h"
+
+#define TEST_TABLE basic_eight
 
 // fix16 definition
 typedef signed int fix16 ;
@@ -28,17 +31,14 @@ typedef signed int fix16 ;
 
 // DMA blend tri/saw test tables
 #define WAVE_TABLE_SIZE 512
-//volatile unsigned int tri_table[WAVE_TABLE_SIZE];
-//volatile unsigned int saw_table[WAVE_TABLE_SIZE];
 //#define exp_table_size 1000
 //volatile fix16 exp_table[exp_table_size]; 
 
+// Wave blending macro for wavetable
 #define WAVE_BLEND(sample1, sample2, blend) (((255 - blend) * (sample1 >> 8)) + (blend * (sample2 >> 8)))
 
 // TEST VALUES FOR MORPH TEST
 #define TEST_PHASE_INC 4000000
-#define TEST_BLEND_INC 5000
-//#define TEST_BLEND_INC 70480000
 
 // the DDS units
 //volatile unsigned long phase_acc = 0; // synthesis phase acc
@@ -65,23 +65,6 @@ char buffer[60];
 //=====Pulldown Macros==========================
 // PORT B
 #define EnablePullDownB(bits) CNPUBCLR=bits; CNPDBSET=bits;
-
-//void table_generation()
-//{
-//    /*
-//     * For testing:
-//     * Generate saw and tri tables
-//     */
-//    int i;
-//    for (i = 0; i < WAVE_TABLE_SIZE; i++) {
-//        saw_table[i] = ((WAVE_TABLE_SIZE - 1) - i) << 23; // ramp down
-//        tri_table[i] = (i < (WAVE_TABLE_SIZE >> 1)) ? 
-//                            (i << 24)
-//                        :
-//                            -((i - (WAVE_TABLE_SIZE >> 1)) << 24) - 1
-//                        ;
-//    }
-//}
 
 // SPI SETUP FOR DAC
 #define config1 SPI_MODE16_ON | SPI_CKE_ON | MASTER_ENABLE_ON
@@ -120,7 +103,7 @@ char buffer[60];
  */
 // END SPI SETUP FOR DAC
 
-void initDAC(){
+void initDAC() {
     /* Steps:
      *    1. Setup SS as digital output.
      *    2. Map SDO to physical pin.
@@ -134,6 +117,20 @@ void initDAC(){
     PPSOutput(2, RPB5, SDO2);      // map SDO2 to RB5
     OpenSPI2(config1, config2);    // see pg 193 in plib reference
     SpiChnOpen(spi_channel, config, spi_divider);
+}
+
+void initADC() {
+    CloseADC10();
+    
+    #define PARAM1 ADC_FORMAT_INTG16 | ADC_CLK_AUTO | ADC_AUTO_SAMPLING_OFF
+    #define PARAM2 ADC_VREF_AVDD_AVSS | ADC_OFFSET_CAL_DISABLE | ADC_SCAN_OFF | ADC_SAMPLES_PER_INT_1 | ADC_ALT_BUF_OFF | ADC_ALT_INPUT_OFF
+    #define PARAM3 ADC_CONV_CLK_PB | ADC_SAMPLE_TIME_5 | ADC_CONV_CLK_Tcy2
+    #define PARAM4 ENABLE_AN0_ANA
+    #define PARAM5 SKIP_SCAN_ALL
+
+    SetChanADC10( ADC_CH0_NEG_SAMPLEA_NVREF | ADC_CH0_POS_SAMPLEA_AN0 );
+    OpenADC10( PARAM1, PARAM2, PARAM3, PARAM4, PARAM5 );
+    EnableADC10();
 }
 
 /* ====== MCP4822 control word ==============
@@ -181,16 +178,17 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
     
     // Get sample to write
     // index of blend is bottom 8 bits of blend
-    DAC_data = WAVE_BLEND(((basic_eight + tab1_offset)[phase_acc>>23]), 
-                          ((basic_eight + tab2_offset)[phase_acc>>23]),
+    DAC_data = WAVE_BLEND(((TEST_TABLE + tab1_offset)[phase_acc>>23]), 
+                          ((TEST_TABLE + tab2_offset)[phase_acc>>23]),
                           (blender & 0xff)) >> 20;
     
     WriteSPI2( DAC_config_chan_A | DAC_data );
     
     // Update phase accumulator
     phase_acc += TEST_PHASE_INC;
-    blend += TEST_BLEND_INC;
-    if ((blend >> 29) > 6) blend = 0; // Don't flow into 8 -> 9 fade, that's bad
+    blend = ReadADC10(0) << 22;
+    AcquireADC10();
+    if ((blend >> 29) > 6) blend = 3758096384; // Don't flow into 8 -> 9 fade, that's bad
 
     // test for ready
     while (TxBufFullSPI2());
@@ -246,6 +244,8 @@ void main(void) {
     // init the threads
     PT_INIT(&pt_timer);
 
+    initADC();
+    
     // init the display
     tft_init_hw();
     tft_begin();
@@ -263,7 +263,6 @@ void main(void) {
     mT2ClearIntFlag(); // and clear the interrupt flag
 
     initDAC();
-    // table_generation();
 
     // round-robin scheduler for threads
     while (1) {
