@@ -7,4 +7,5 @@ pt_cornell_TFT.h  \
 lc.h  \
 lc-switch.h  \
 pt.h  \
- Basic8Tab.h 
+ Basic8Tab.h  \
+freq_to_accum.h 

@@ -20,6 +20,9 @@
 #include "Basic8Tab.h"
 // #include "SawSyncEnv.h"
 
+// Include frequency phase accumulator table
+#include "freq_to_accum.h"
+
 #define TEST_TABLE basic_eight
 
 // fix16 definition
