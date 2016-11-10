@@ -23,6 +23,12 @@
 // Include frequency phase accumulator table
 #include "freq_to_accum.h"
 
+// Sequencer values
+char step_notes[16] = {0};
+char steps_on[16] = {0};
+char curr_step_play = 0;
+char curr_step_edit = 0;
+
 #define TEST_TABLE basic_eight
 
 // fix16 definition
@@ -41,7 +47,7 @@ typedef signed int fix16 ;
 #define WAVE_BLEND(sample1, sample2, blend) (((255 - blend) * (sample1 >> 8)) + (blend * (sample2 >> 8)))
 
 // TEST VALUES FOR MORPH TEST
-#define TEST_PHASE_INC 4000000
+#define TEST_PHASE_INC (accumulators[24])
 
 // the DDS units
 //volatile unsigned long phase_acc = 0; // synthesis phase acc
