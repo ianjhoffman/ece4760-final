@@ -24,9 +24,15 @@
 #include "freq_to_accum.h"
 
 // Sequencer values
-char step_notes[16] = {0};
-char steps_on[16] = {0};
-char curr_step_play = 0;
+char step_notes[16] = {12, 27, 19, 20,
+                       31, 22, 0, 0,
+                       29, 31, 32, 25,
+                       19, 24, 22, 24};
+char steps_on[16] = {1, 1, 1, 1,
+                     1, 1, 0, 1,
+                     1, 1, 1, 1,
+                     0, 1, 1, 1};
+//char curr_step_play = 0;
 char curr_step_edit = 0;
 
 #define TEST_TABLE basic_eight
@@ -47,7 +53,7 @@ typedef signed int fix16 ;
 #define WAVE_BLEND(sample1, sample2, blend) (((255 - blend) * (sample1 >> 8)) + (blend * (sample2 >> 8)))
 
 // TEST VALUES FOR MORPH TEST
-#define TEST_PHASE_INC (accumulators[24])
+#define TEST_PHASE_INC (accumulators[12])
 
 // the DDS units
 //volatile unsigned long phase_acc = 0; // synthesis phase acc
@@ -173,6 +179,12 @@ volatile unsigned int tab1_offset;
 volatile unsigned int tab2_offset;
 volatile unsigned int blender;
 
+volatile unsigned char old_step = 0;
+volatile unsigned char curr_step = 0;
+volatile unsigned int step_accum = 0;
+
+#define STEP_ACCUM_120_TEST 21472 //10736 //5368
+
 void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 {
     mT2ClearIntFlag();
@@ -191,13 +203,25 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
                           ((TEST_TABLE + tab2_offset)[phase_acc>>23]),
                           (blender & 0xff)) >> 20;
     
+    if (!steps_on[curr_step]) DAC_data = 0; // Rest
+    
     WriteSPI2( DAC_config_chan_A | DAC_data );
     
     // Update phase accumulator
-    phase_acc += TEST_PHASE_INC;
+    phase_acc += accumulators[step_notes[curr_step]];
+    
+    // Read blend bias from ADC
     blend = ReadADC10(0) << 22;
     AcquireADC10();
-    if ((blend >> 29) > 6) blend = 3758096384; // Don't flow into 8 -> 9 fade, that's bad
+    // Don't flow into 8 -> 9 fade, that's bad
+    if ((blend >> 29) > 6) blend = 3758096384;
+    
+    // Update step in sequence
+    step_accum += STEP_ACCUM_120_TEST;
+    old_step = curr_step;
+    curr_step = step_accum >> 28; // 0 thru 15
+    // If we switched to a new step, reset phase accumulator
+    if (old_step != curr_step) phase_acc = 0;
 
     // test for ready
     while (TxBufFullSPI2());
