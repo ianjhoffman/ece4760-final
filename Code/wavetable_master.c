@@ -24,14 +24,14 @@
 #include "freq_to_accum.h"
 
 // Sequencer values
-char step_notes[16] = {12, 27, 19, 20,
-                       31, 22, 0, 0,
-                       29, 31, 32, 25,
-                       19, 24, 22, 24};
+char step_notes[16] = {12, 16, 19, 24,
+                       19, 16, 12, 17,
+                       20, 24, 20, 17,
+                       12, 19, 22, 24};
 char steps_on[16] = {1, 1, 1, 1,
-                     1, 1, 0, 1,
                      1, 1, 1, 1,
-                     0, 1, 1, 1};
+                     1, 1, 1, 1,
+                     1, 1, 1, 1};
 //char curr_step_play = 0;
 char curr_step_edit = 0;
 
