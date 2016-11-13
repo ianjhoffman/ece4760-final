@@ -22,6 +22,8 @@
 
 // Include frequency phase accumulator table
 #include "freq_to_accum.h"
+// Include tempo phase accumulator table
+#include "tempo_to_accum.h"
 
 // Sequencer values
 char step_notes[16] = {12, 16, 19, 24,
@@ -32,7 +34,6 @@ char steps_on[16] = {1, 1, 1, 1,
                      1, 1, 1, 1,
                      1, 1, 1, 1,
                      1, 1, 1, 1};
-//char curr_step_play = 0;
 char curr_step_edit = 0;
 
 #define TEST_TABLE basic_eight
@@ -64,8 +65,6 @@ volatile unsigned int blend = 0;
 #define DAC_config_chan_A 0b0011000000000000
 #define DAC_config_chan_B 0b1011000000000000
 
-// string buffer
-char buffer[60];
 // === 16:16 fixed point macros ==========================================
 #define multfix16(a,b) ((fix16)(((( signed long long)(a))*(( signed long long)(b)))>>16)) //multiply two fixed 16:16
 #define float2fix16(a) ((fix16)((a)*65536.0)) // 2^16
@@ -148,6 +147,35 @@ void initADC() {
     EnableADC10();
 }
 
+// TFT constants
+char tempo_label[] = "TEMPO";
+char table_label[] = "TABLE";
+
+void initTFT() {
+    int i;
+    // Draw sequence boxes and on/offs
+    for (i = 0; i < 16; i++) {
+        tft_drawRect(1 + (i * 20), 115, 18, 100, ILI9340_BLUE);
+        tft_drawCircle(9 + (i * 20), 227, 5, ILI9340_CYAN);
+    }
+    // Draw separator lines
+    tft_drawLine(0, 105, 320, 105, ILI9340_WHITE); // horizontal above seq
+    tft_drawLine(160, 0, 160, 105, ILI9340_WHITE); // vertical separator
+    tft_drawLine(0, 40, 320, 40, ILI9340_WHITE); // horizontal under text
+    
+    // Draw active sequence
+    for (i = 0; i < 16; i++) {
+        tft_fillRect(2 + (i * 20), 213 - (step_notes[i] << 1), 16, 2, ILI9340_CYAN);
+        if (steps_on[i]) tft_fillCircle(9 + (i * 20), 227, 5, ILI9340_CYAN);
+    }
+    
+    // Draw tempo/table labels
+    tft_setTextColor(ILI9340_WHITE);
+    tft_setTextSize(3);
+    tft_setCursor(36, 10); tft_writeString(tempo_label);
+    tft_setCursor(197, 10); tft_writeString(table_label);
+}
+
 /* ====== MCP4822 control word ==============
 bit 15 A/B: DACA or DACB Selection bit
 1 = Write to DACB
@@ -213,15 +241,19 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
     // Read blend bias from ADC
     blend = ReadADC10(0) << 22;
     AcquireADC10();
-    // Don't flow into 8 -> 9 fade, that's bad
+    // Don't flow into 8 -> 9 fade, that's bad/doesn't exist
     if ((blend >> 29) > 6) blend = 3758096384;
     
     // Update step in sequence
     step_accum += STEP_ACCUM_120_TEST;
     old_step = curr_step;
     curr_step = step_accum >> 28; // 0 thru 15
-    // If we switched to a new step, reset phase accumulator
-    if (old_step != curr_step) phase_acc = 0;
+    // If we switched to a new step, adjust TFT seq readout to reflect that
+    if (old_step != curr_step) {
+        tft_drawRect(1 + (old_step * 20), 115, 18, 100, 
+            (old_step == curr_step_edit ? ILI9340_GREEN : ILI9340_BLUE));
+        tft_drawRect(1 + (curr_step * 20), 115, 18, 100, ILI9340_RED); 
+    }
 
     // test for ready
     while (TxBufFullSPI2());
@@ -234,7 +266,7 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 // === thread structures ============================================
 // thread control structs
 // note that UART input and output are threads
-static struct pt pt_timer, pt_mux;
+static struct pt pt_tft, pt_mux;
 
 static int tempo, step_select, note_select, wave_select, shape_attack, shape_decay, amp_attack, amp_decay;
 
@@ -290,26 +322,34 @@ int sys_time_seconds ;
 
 // === Timer Thread =================================================
 // update a 1 second tick counter
-static PT_THREAD (protothread_timer(struct pt *pt))
-{
+//static PT_THREAD (protothread_timer(struct pt *pt))
+//{
+//    PT_BEGIN(pt);
+//    tft_setCursor(0, 0);
+//    tft_setTextColor(ILI9340_WHITE);  tft_setTextSize(1);
+//    tft_writeString("Time in seconds since boot\n");
+//    while(1) {
+//        PT_YIELD_TIME_msec(1000);
+//        sys_time_seconds++;
+//
+//        // draw sys_time
+//        // x,y,w,h,radius,color
+//        tft_fillRoundRect(0,10, 100, 14, 1, ILI9340_BLACK);
+//        tft_setCursor(0, 10);
+//        tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
+//        sprintf(buffer, "%d", sys_time_seconds);
+//        tft_writeString(buffer);
+//    }
+//  PT_END(pt);
+//} // timer thread
+
+static PT_THREAD (protothread_tft(struct pt *pt)) {
     PT_BEGIN(pt);
-    tft_setCursor(0, 0);
-    tft_setTextColor(ILI9340_WHITE);  tft_setTextSize(1);
-    tft_writeString("Time in seconds since boot\n");
     while(1) {
         PT_YIELD_TIME_msec(1000);
-        sys_time_seconds++;
-
-        // draw sys_time
-        // x,y,w,h,radius,color
-        tft_fillRoundRect(0,10, 100, 14, 1, ILI9340_BLACK);
-        tft_setCursor(0, 10);
-        tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-        sprintf(buffer, "%d", sys_time_seconds);
-        tft_writeString(buffer);
     }
-  PT_END(pt);
-} // timer thread
+    PT_END(pt);
+}
 
 // === Main  ======================================================
 void main(void) {
@@ -324,7 +364,7 @@ void main(void) {
     INTEnableSystemMultiVectoredInt();
 
     // init the threads
-    PT_INIT(&pt_timer);
+    PT_INIT(&pt_tft);
     PT_INIT(&pt_mux);
 
     initADC();
@@ -334,7 +374,9 @@ void main(void) {
     tft_begin();
     tft_fillScreen(ILI9340_BLACK);
     //240x320 vertical display
-    tft_setRotation(0); // Use tft_setRotation(1) for 320x240
+    tft_setRotation(1); // Use tft_setRotation(1) for 320x240
+    
+    initTFT(); // Initialize the TFT
 
       // Set up timer2 on,  interrupts, internal clock, prescalar 8, toggle rate
       // at 30 MHz PB clock 60 counts is two microsec
@@ -351,7 +393,7 @@ void main(void) {
     
     // round-robin scheduler for threads
     while (1) {
-        PT_SCHEDULE(protothread_timer(&pt_timer));
+        PT_SCHEDULE(protothread_tft(&pt_tft));
         PT_SCHEDULE(protothread_mux(&pt_mux));
     }
 } // main

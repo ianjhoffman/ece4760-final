@@ -8,4 +8,5 @@ lc.h  \
 lc-switch.h  \
 pt.h  \
  Basic8Tab.h  \
-freq_to_accum.h 
+freq_to_accum.h  \
+tempo_to_accum.h 
