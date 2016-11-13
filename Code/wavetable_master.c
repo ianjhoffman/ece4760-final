@@ -234,8 +234,57 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 // === thread structures ============================================
 // thread control structs
 // note that UART input and output are threads
-static struct pt pt_timer;
+static struct pt pt_timer, pt_mux;
 
+static int tempo, step_select, note_select, wave_select, shape_attack, shape_decay, amp_attack, amp_decay;
+
+static PT_THREAD (protothread_mux(struct pt *pt)){
+    PT_BEGIN(pt);
+    while(1){
+                
+        // Set Channel to zero
+        // read Input Pin
+        
+        /*
+        tempo = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
+        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
+        
+        // Set Channel to one
+        PORTToggleBits(IOPORT_B, BIT_7);
+        step_select = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
+        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
+        // Set Channel to two
+        PORTToggleBits(IOPORT_B, BIT_7|BIT_8);
+        note_select = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
+        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
+        // Set Channel to three
+        PORTToggleBits(IOPORT_B, BIT_7);
+        wave_select = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
+        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
+        // Set Channel to four
+        PORTToggleBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
+        shape_attack = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
+        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
+        // Set Channel to five
+        PORTToggleBits(IOPORT_B, BIT_7);
+        shape_decay = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
+        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
+        // Set Channel to six
+        PORTToggleBits(IOPORT_B, BIT_7|BIT_8);
+        amp_attack = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
+        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
+        // Set Channel to seven
+        PORTToggleBits(IOPORT_B, BIT_7);
+        amp_decay = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
+        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
+        // Clear all the bits, yield 
+        PORTClearBits(IOPORT_B, BIT_7 | BIT_8 | BIT_9 );
+         */
+        PT_YIELD_TIME_msec(50);
+         
+    }
+    PT_END(pt);
+}
 // system 1 second interval tick
 int sys_time_seconds ;
 
@@ -276,6 +325,7 @@ void main(void) {
 
     // init the threads
     PT_INIT(&pt_timer);
+    PT_INIT(&pt_mux);
 
     initADC();
     
@@ -296,10 +346,13 @@ void main(void) {
     mT2ClearIntFlag(); // and clear the interrupt flag
 
     initDAC();
-
+    // Set the MUX Channel Select Pins as outputs
+    mPORTBSetPinsDigitalOut(BIT_7 | BIT_8 | BIT_9);    //Set PINS 16,17,18 as outputs
+    
     // round-robin scheduler for threads
     while (1) {
         PT_SCHEDULE(protothread_timer(&pt_timer));
+        PT_SCHEDULE(protothread_mux(&pt_mux));
     }
 } // main
 
