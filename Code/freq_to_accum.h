@@ -8,7 +8,7 @@
 #ifndef FREQ_TO_ACCUM_H
 #define	FREQ_TO_ACCUM_H
 
-unsigned int accumulators[] = {
+unsigned int freq_accumulators[] = {
     1404592,
 	1488113,
 	1576601,

@@ -211,7 +211,7 @@ volatile unsigned char old_step = 0;
 volatile unsigned char curr_step = 0;
 volatile unsigned int step_accum = 0;
 
-#define STEP_ACCUM_120_TEST 21472 //10736 //5368
+#define STEP_ACCUM_120_TEST (tempo_accumulators[25])
 
 void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 {
@@ -236,7 +236,7 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
     WriteSPI2( DAC_config_chan_A | DAC_data );
     
     // Update phase accumulator
-    phase_acc += accumulators[step_notes[curr_step]];
+    phase_acc += freq_accumulators[step_notes[curr_step]];
     
     // Read blend bias from ADC
     blend = ReadADC10(0) << 22;
