@@ -263,25 +263,18 @@ static int tempo;
 
 char test_buffer[60];
 
+#define NOP_X8 { Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop(); }
+
 static PT_THREAD (protothread_mux(struct pt *pt)){
     PT_BEGIN(pt);
     while(1){
-                
-        // Set Channel to zero
-        // read Input Pin
-        
-        tft_fillRect(19, 49, 100, 20, ILI9340_BLACK);
-        
-        PORTClearBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
-//        Nop(); Nop(); Nop(); // for safety
-         
-        sprintf(test_buffer, "%d BPM", tempo_vals[tempo_index]);
-        tft_setTextColor(ILI9340_WHITE);
-        tft_setTextSize(2);
-        tft_setCursor(20, 50); tft_writeString(test_buffer);
 
-        tempo_index = ReadADC10(0) >> 4;
+        PORTClearBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
+        NOP_X8;
         AcquireADC10();
+        NOP_X8;
+        tempo_index = ReadADC10(0) >> 4;
+        NOP_X8;
         
         // Set Channel to one
 //        PORTToggleBits(IOPORT_B, BIT_7);
@@ -294,12 +287,14 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
 //        note_select = ReadADC10(0);
 //        AcquireADC10();
         // Set Channel to three
-//        PORTToggleBits(IOPORT_B, BIT_7);
-//        PT_YIELD_TIME_msec(1);
-//        AcquireADC10();
-//        blend = ReadADC10(0) << 22;
-//        // Don't flow into 8 -> 9 fade, that's bad/doesn't exist
-//        if ((blend >> 29) > 6) blend = 3758096384;
+        PORTSetBits(IOPORT_B, BIT_7);   // !!!
+        NOP_X8;
+        AcquireADC10();
+        NOP_X8;
+        blend = ReadADC10(0) << 22;
+        // Don't flow into 8 -> 9 fade, that's bad/doesn't exist
+        if ((blend >> 29) > 6) blend = 3758096384;
+        NOP_X8;
         // Set Channel to four
 //        PORTToggleBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
 //        Nop(); Nop(); Nop(); // for safety
@@ -356,7 +351,13 @@ int sys_time_seconds ;
 static PT_THREAD (protothread_tft(struct pt *pt)) {
     PT_BEGIN(pt);
     while(1) {
-        PT_YIELD_TIME_msec(1000);
+        tft_fillRect(19, 49, 100, 20, ILI9340_BLACK);
+        sprintf(test_buffer, "%d BPM", tempo_vals[tempo_index]);
+        tft_setTextColor(ILI9340_WHITE);
+        tft_setTextSize(2);
+        tft_setCursor(20, 50); tft_writeString(test_buffer);
+        
+        PT_YIELD_TIME_msec(100);
     }
     PT_END(pt);
 }
