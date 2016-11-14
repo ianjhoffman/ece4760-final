@@ -26,14 +26,14 @@
 #include "tempo_to_accum.h"
 
 // Sequencer values
-char step_notes[16] = {12, 16, 19, 24,
-                       19, 16, 12, 17,
-                       20, 24, 20, 17,
-                       12, 19, 22, 24};
-char steps_on[16] = {1, 1, 1, 1,
-                     1, 1, 1, 1,
-                     1, 1, 1, 1,
-                     1, 1, 1, 1};
+char step_notes[16] = {12, 0, 24, 0,
+                       36, 0, 24, 0,
+                       12, 0, 19, 0,
+                       0, 17, 19, 20};
+char steps_on[16] = {1, 0, 1, 0,
+                     1, 0, 1, 0,
+                     1, 0, 1, 0,
+                     0, 1, 1, 1};
 char curr_step_edit = 0;
 
 #define TEST_TABLE basic_eight
@@ -53,13 +53,11 @@ typedef signed int fix16 ;
 // Wave blending macro for wavetable
 #define WAVE_BLEND(sample1, sample2, blend) (((255 - blend) * (sample1 >> 8)) + (blend * (sample2 >> 8)))
 
-// TEST VALUES FOR MORPH TEST
-#define TEST_PHASE_INC (accumulators[12])
-
 // the DDS units
 //volatile unsigned long phase_acc = 0; // synthesis phase acc
 volatile unsigned int phase_acc = 0; // synthesis phase acc
 volatile unsigned int blend = 0;
+volatile unsigned int tempo_index = 25; // 120 BPM
 
 // A-channel, 1x, active
 #define DAC_config_chan_A 0b0011000000000000
@@ -165,7 +163,7 @@ void initTFT() {
     
     // Draw active sequence
     for (i = 0; i < 16; i++) {
-        tft_fillRect(2 + (i * 20), 213 - (step_notes[i] << 1), 16, 2, ILI9340_CYAN);
+        tft_fillRect(2 + (i * 20), 212 - (step_notes[i] << 1), 16, 2, ILI9340_CYAN);
         if (steps_on[i]) tft_fillCircle(9 + (i * 20), 227, 5, ILI9340_CYAN);
     }
     
@@ -211,8 +209,6 @@ volatile unsigned char old_step = 0;
 volatile unsigned char curr_step = 0;
 volatile unsigned int step_accum = 0;
 
-#define STEP_ACCUM_120_TEST (tempo_accumulators[25])
-
 void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 {
     mT2ClearIntFlag();
@@ -238,14 +234,8 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
     // Update phase accumulator
     phase_acc += freq_accumulators[step_notes[curr_step]];
     
-    // Read blend bias from ADC
-    blend = ReadADC10(0) << 22;
-    AcquireADC10();
-    // Don't flow into 8 -> 9 fade, that's bad/doesn't exist
-    if ((blend >> 29) > 6) blend = 3758096384;
-    
     // Update step in sequence
-    step_accum += STEP_ACCUM_120_TEST;
+    step_accum += tempo_accumulators[tempo_index];
     old_step = curr_step;
     curr_step = step_accum >> 28; // 0 thru 15
     // If we switched to a new step, adjust TFT seq readout to reflect that
@@ -268,7 +258,10 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 // note that UART input and output are threads
 static struct pt pt_tft, pt_mux;
 
-static int tempo, step_select, note_select, wave_select, shape_attack, shape_decay, amp_attack, amp_decay;
+static int step_select, note_select, shape_attack, shape_decay, amp_attack, amp_decay;
+static int tempo;
+
+char test_buffer[60];
 
 static PT_THREAD (protothread_mux(struct pt *pt)){
     PT_BEGIN(pt);
@@ -277,42 +270,59 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
         // Set Channel to zero
         // read Input Pin
         
-        /*
-        tempo = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
-        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
+        tft_fillRect(19, 49, 100, 20, ILI9340_BLACK);
+        
+        PORTClearBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
+//        Nop(); Nop(); Nop(); // for safety
+         
+        sprintf(test_buffer, "%d BPM", tempo_vals[tempo_index]);
+        tft_setTextColor(ILI9340_WHITE);
+        tft_setTextSize(2);
+        tft_setCursor(20, 50); tft_writeString(test_buffer);
+
+        tempo_index = ReadADC10(0) >> 4;
+        AcquireADC10();
         
         // Set Channel to one
-        PORTToggleBits(IOPORT_B, BIT_7);
-        step_select = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
-        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
-        // Set Channel to two
-        PORTToggleBits(IOPORT_B, BIT_7|BIT_8);
-        note_select = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
-        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
+//        PORTToggleBits(IOPORT_B, BIT_7);
+//        Nop(); Nop(); Nop(); // for safety
+//        step_select = ReadADC10(0);
+//        AcquireADC10();
+//        // Set Channel to two
+//        PORTToggleBits(IOPORT_B, BIT_7|BIT_8);
+//        Nop(); Nop(); Nop(); // for safety
+//        note_select = ReadADC10(0);
+//        AcquireADC10();
         // Set Channel to three
-        PORTToggleBits(IOPORT_B, BIT_7);
-        wave_select = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
-        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
+//        PORTToggleBits(IOPORT_B, BIT_7);
+//        PT_YIELD_TIME_msec(1);
+//        AcquireADC10();
+//        blend = ReadADC10(0) << 22;
+//        // Don't flow into 8 -> 9 fade, that's bad/doesn't exist
+//        if ((blend >> 29) > 6) blend = 3758096384;
         // Set Channel to four
-        PORTToggleBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
-        shape_attack = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
-        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
-        // Set Channel to five
-        PORTToggleBits(IOPORT_B, BIT_7);
-        shape_decay = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
-        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
-        // Set Channel to six
-        PORTToggleBits(IOPORT_B, BIT_7|BIT_8);
-        amp_attack = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
-        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
-        // Set Channel to seven
-        PORTToggleBits(IOPORT_B, BIT_7);
-        amp_decay = ReadADC10(0); // read the result of channel 9 conversion from the idle buffer
-        AcquireADC10(); // not needed if ADC_AUTO_SAMPLING_ON below
-        // Clear all the bits, yield 
-        PORTClearBits(IOPORT_B, BIT_7 | BIT_8 | BIT_9 );
-         */
-        PT_YIELD_TIME_msec(50);
+//        PORTToggleBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
+//        Nop(); Nop(); Nop(); // for safety
+//        shape_attack = ReadADC10(0);
+//        AcquireADC10();
+//        // Set Channel to five
+//        PORTToggleBits(IOPORT_B, BIT_7);
+//        Nop(); Nop(); Nop(); // for safety
+//        shape_decay = ReadADC10(0);
+//        AcquireADC10();
+//        // Set Channel to six
+//        PORTToggleBits(IOPORT_B, BIT_7|BIT_8);
+//        Nop(); Nop(); Nop(); // for safety
+//        amp_attack = ReadADC10(0);
+//        AcquireADC10();
+//        // Set Channel to seven
+//        PORTToggleBits(IOPORT_B, BIT_7);
+//        Nop(); Nop(); Nop(); // for safety
+//        amp_decay = ReadADC10(0);
+//        AcquireADC10();
+        // Clear all the bits, yield
+
+        PT_YIELD_TIME_msec(50); // run approx. 20Hz
          
     }
     PT_END(pt);
