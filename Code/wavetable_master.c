@@ -30,11 +30,14 @@ char step_notes[16] = {12, 0, 24, 0,
                        36, 0, 24, 0,
                        12, 0, 19, 0,
                        0, 17, 19, 20};
+
 char steps_on[16] = {1, 0, 1, 0,
                      1, 0, 1, 0,
                      1, 0, 1, 0,
                      0, 1, 1, 1};
-char curr_step_edit = 0;
+
+volatile unsigned char step_select = 0;
+volatile unsigned char note_select = 0;
 
 #define TEST_TABLE basic_eight
 
@@ -241,7 +244,7 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
     // If we switched to a new step, adjust TFT seq readout to reflect that
     if (old_step != curr_step) {
         tft_drawRect(1 + (old_step * 20), 115, 18, 100, 
-            (old_step == curr_step_edit ? ILI9340_GREEN : ILI9340_BLUE));
+            (old_step == step_select ? ILI9340_GREEN : ILI9340_BLUE));
         tft_drawRect(1 + (curr_step * 20), 115, 18, 100, ILI9340_RED); 
     }
 
@@ -258,39 +261,45 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 // note that UART input and output are threads
 static struct pt pt_tft, pt_mux;
 
-static int step_select, note_select, shape_attack, shape_decay, amp_attack, amp_decay;
+static int shape_attack, shape_decay, amp_attack, amp_decay;
 static int tempo;
 
 char test_buffer[60];
-
+volatile int wait;
 static PT_THREAD (protothread_mux(struct pt *pt)){
     PT_BEGIN(pt);
     while(1){
 
+        // Channel 0 (0b000) : tempo
         PORTClearBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
-        delay_us(1); // Delay for 1 microsecond to let mux settle
+        wait = 0; while(wait < 20) wait++;
         AcquireADC10();
-        while(BusyADC10()); // Wait for ADC to be ready before reading
+        wait = 0; while(wait < 10) wait++;
         tempo_index = ReadADC10(0) >> 4;
         
-        // Set Channel to one
-//        PORTToggleBits(IOPORT_B, BIT_7);
-//        Nop(); Nop(); Nop(); // for safety
-//        step_select = ReadADC10(0);
-//        AcquireADC10();
-//        // Set Channel to two
-//        PORTToggleBits(IOPORT_B, BIT_7|BIT_8);
-//        Nop(); Nop(); Nop(); // for safety
-//        note_select = ReadADC10(0);
-//        AcquireADC10();
-        // Set Channel to three
-        PORTSetBits(IOPORT_B, BIT_7);   // !!!
-        delay_us(1); // Delay for 1 microsecond to let mux settle
+        // Channel 1 (0b001) : step select
+        PORTSetBits(IOPORT_B, BIT_7);
+        wait = 0; while(wait < 20) wait++;
         AcquireADC10();
-        while(BusyADC10()); // Wait for ADC to be ready before reading
+        wait = 0; while(wait < 10) wait++;
+        step_select = ReadADC10(0) >> 6;
+        
+        // Channel 2 (0b010) : note select
+        PORTToggleBits(IOPORT_B, BIT_7|BIT_8);
+        wait = 0; while(wait < 20) wait++;
+        AcquireADC10();
+        wait = 0; while(wait < 10) wait++;
+        note_select = ReadADC10(0)/20;
+
+        // Channel 3 (0b011) : blend
+        PORTSetBits(IOPORT_B, BIT_7);
+        wait = 0; while(wait < 20) wait++;
+        AcquireADC10();
+        wait = 0; while(wait < 10) wait++;
         blend = ReadADC10(0) << 22;
         // Don't flow into 8 -> 9 fade, that's bad/doesn't exist
         if ((blend >> 29) > 6) blend = 3758096384;
+        
         // Set Channel to four
 //        PORTToggleBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
 //        Nop(); Nop(); Nop(); // for safety
@@ -312,7 +321,7 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
 //        amp_decay = ReadADC10(0);
 //        AcquireADC10();
         // Clear all the bits, yield
-
+         
         PT_YIELD_TIME_msec(50); // run approx. 20Hz
          
     }
