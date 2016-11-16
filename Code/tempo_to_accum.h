@@ -8,7 +8,7 @@
 #ifndef TEMPO_TO_ACCUM_H
 #define	TEMPO_TO_ACCUM_H
 
-unsigned int tempo_accumulators[] = {
+unsigned short tempo_accumulators[] = {
     12527, 12885, 13243, 13601,
     13959, 14317, 14674, 15032,
     15390, 15748, 16106, 16464,
@@ -26,7 +26,7 @@ unsigned int tempo_accumulators[] = {
     32570, 32928, 33286, 33644,
     34002, 34360, 34718, 35076
 };
-unsigned int tempo_vals[] = {
+unsigned char tempo_vals[] = {
     70, 72, 74, 76,
     78, 80, 82, 84,
     86, 88, 90, 92,

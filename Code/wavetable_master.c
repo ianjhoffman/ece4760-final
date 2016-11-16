@@ -263,18 +263,15 @@ static int tempo;
 
 char test_buffer[60];
 
-#define NOP_X8 { Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop(); }
-
 static PT_THREAD (protothread_mux(struct pt *pt)){
     PT_BEGIN(pt);
     while(1){
 
         PORTClearBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
-        NOP_X8;
+        delay_us(1); // Delay for 1 microsecond to let mux settle
         AcquireADC10();
-        NOP_X8;
+        while(BusyADC10()); // Wait for ADC to be ready before reading
         tempo_index = ReadADC10(0) >> 4;
-        NOP_X8;
         
         // Set Channel to one
 //        PORTToggleBits(IOPORT_B, BIT_7);
@@ -288,13 +285,12 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
 //        AcquireADC10();
         // Set Channel to three
         PORTSetBits(IOPORT_B, BIT_7);   // !!!
-        NOP_X8;
+        delay_us(1); // Delay for 1 microsecond to let mux settle
         AcquireADC10();
-        NOP_X8;
+        while(BusyADC10()); // Wait for ADC to be ready before reading
         blend = ReadADC10(0) << 22;
         // Don't flow into 8 -> 9 fade, that's bad/doesn't exist
         if ((blend >> 29) > 6) blend = 3758096384;
-        NOP_X8;
         // Set Channel to four
 //        PORTToggleBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
 //        Nop(); Nop(); Nop(); // for safety
