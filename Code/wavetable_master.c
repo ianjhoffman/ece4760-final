@@ -36,6 +36,7 @@ char steps_on[16] = {1, 0, 1, 0,
                      1, 0, 1, 0,
                      0, 1, 1, 1};
 
+volatile unsigned char old_step_select = 0;
 volatile unsigned char step_select = 0;
 volatile unsigned char note_select = 0;
 
@@ -82,7 +83,7 @@ volatile unsigned int tempo_index = 25; // 120 BPM
 #define absfix16(a) abs(a)
 #define onefix16 0x00010000 // int2fix16(1)
 
-//=====Pulldown Macros==========================
+// ===== Pulldown Macros ==========================
 // PORT B
 #define EnablePullDownB(bits) CNPUBCLR=bits; CNPDBSET=bits;
 
@@ -103,7 +104,7 @@ volatile unsigned int tempo_index = 25; // 120 BPM
 /*    SPI_ENABLE    -> Enable SPI module
  */
 
-#define spi_channel    2
+#define spi_channel 2
 // Use channel 2 since channel 1 is used by TFT display
 
 #define spi_divider 2
@@ -182,22 +183,6 @@ void initTFT() {
     tft_setCursor(197, 10); tft_writeString(table_label);
 }
 
-/* ====== MCP4822 control word ==============
-bit 15 A/B: DACA or DACB Selection bit
-1 = Write to DACB
-0 = Write to DACA
-bit 14 ? Don?t Care
-bit 13 GA: Output Gain Selection bit
-1 = 1x (VOUT = VREF * D/4096)
-0 = 2x (VOUT = 2 * VREF * D/4096), where internal VREF = 2.048V.
-bit 12 SHDN: Output Shutdown Control bit
-1 = Active mode operation. VOUT is available. ?
-0 = Shutdown the selected DAC channel. Analog output is not available at the channel that was shut down.
-VOUT pin is connected to 500 k???typical)?
-bit 11-0 D11:D0: DAC Input Data bits. Bit x is ignored.
-*/
-
-
 //== Timer 2 interrupt handler ===========================================
 volatile unsigned int DAC_data ;// output value
 //volatile unsigned int exp_index; volatile fix16 multiplier; // Values used for the ramping
@@ -246,12 +231,12 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
     step_accum += tempo_accumulators[tempo_index];
     old_step = curr_step;
     curr_step = step_accum >> 28; // 0 thru 15
+    
     // If we switched to a new step, adjust TFT seq readout to reflect that
-    if (old_step != curr_step) {
-        tft_drawRect(1 + (old_step * 20), 115, 18, 100, 
-            (old_step == step_select ? ILI9340_GREEN : ILI9340_BLUE));
-        tft_drawRect(1 + (curr_step * 20), 115, 18, 100, ILI9340_RED); 
-    }
+//    if (old_step != curr_step) {
+//        tft_drawRect(1 + (old_step * 20), 115, 18, 100, ILI9340_BLUE);
+//        tft_drawRect(1 + (curr_step * 20), 115, 18, 100, ILI9340_RED); 
+//    }
 
     // test for ready
     while (TxBufFullSPI2());
@@ -284,6 +269,7 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
         wait = 0; while(wait < 20) wait++;
         AcquireADC10();
         wait = 0; while(wait < 10) wait++;
+        old_step_select = step_select;
         step_select = ReadADC10(0) >> 6;
         
         // Channel 2 (0b010) : note select
@@ -309,15 +295,17 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
         wait = 0; while(wait < 10) wait++;
         amp_env = ReadADC10(0);
         
-        // Channel 6 (0b101) : shape envelope
-        PORTSetBits(IOPORT_B, BIT_7);
+        // we skip pin six completely
+        
+        // Channel 6 (0b110) : shape envelope
+        PORTSetBits(IOPORT_B, BIT_8);
         wait = 0; while(wait < 20) wait++;
         AcquireADC10();
         wait = 0; while(wait < 10) wait++;
         shape_env = ReadADC10(0);
         
-        // Channel 7 (0b110) : shape amount
-        PORTToggleBits(IOPORT_B, BIT_7|BIT_8);
+        // Channel 7 (0b111) : shape amount
+        PORTSetBits(IOPORT_B, BIT_7);
         wait = 0; while(wait < 20) wait++;
         AcquireADC10();
         wait = 0; while(wait < 10) wait++;
@@ -331,32 +319,10 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
 // system 1 second interval tick
 int sys_time_seconds ;
 
-// === Timer Thread =================================================
-// update a 1 second tick counter
-//static PT_THREAD (protothread_timer(struct pt *pt))
-//{
-//    PT_BEGIN(pt);
-//    tft_setCursor(0, 0);
-//    tft_setTextColor(ILI9340_WHITE);  tft_setTextSize(1);
-//    tft_writeString("Time in seconds since boot\n");
-//    while(1) {
-//        PT_YIELD_TIME_msec(1000);
-//        sys_time_seconds++;
-//
-//        // draw sys_time
-//        // x,y,w,h,radius,color
-//        tft_fillRoundRect(0,10, 100, 14, 1, ILI9340_BLACK);
-//        tft_setCursor(0, 10);
-//        tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-//        sprintf(buffer, "%d", sys_time_seconds);
-//        tft_writeString(buffer);
-//    }
-//  PT_END(pt);
-//} // timer thread
-
 static PT_THREAD (protothread_tft(struct pt *pt)) {
     PT_BEGIN(pt);
     while(1) {
+        // Write BPM to screen
         tft_fillRect(19, 49, 100, 20, ILI9340_BLACK);
         sprintf(test_buffer, "%d BPM", tempo_vals[tempo_index]);
         tft_setTextColor(ILI9340_WHITE);
@@ -395,8 +361,7 @@ void main(void) {
     
     initTFT(); // Initialize the TFT
 
-      // Set up timer2 on,  interrupts, internal clock, prescalar 8, toggle rate
-      // at 30 MHz PB clock 60 counts is two microsec
+    // Set up timer2 on,  interrupts, internal clock, 100KHz
     // period of 200
     OpenTimer2(T2_ON | T2_SOURCE_INT | T2_PS_1_2, 200);
 
