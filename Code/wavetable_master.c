@@ -39,6 +39,11 @@ char steps_on[16] = {1, 0, 1, 0,
 volatile unsigned char step_select = 0;
 volatile unsigned char note_select = 0;
 
+// Synthesis modulation params
+volatile unsigned int amp_env = 0;
+volatile unsigned int shape_env = 0;
+volatile unsigned int shape_amt = 0;
+
 #define TEST_TABLE basic_eight
 
 // fix16 definition
@@ -261,9 +266,6 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 // note that UART input and output are threads
 static struct pt pt_tft, pt_mux;
 
-static int shape_attack, shape_decay, amp_attack, amp_decay;
-static int tempo;
-
 char test_buffer[60];
 volatile int wait;
 static PT_THREAD (protothread_mux(struct pt *pt)){
@@ -300,27 +302,26 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
         // Don't flow into 8 -> 9 fade, that's bad/doesn't exist
         if ((blend >> 29) > 6) blend = 3758096384;
         
-        // Set Channel to four
-//        PORTToggleBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
-//        Nop(); Nop(); Nop(); // for safety
-//        shape_attack = ReadADC10(0);
-//        AcquireADC10();
-//        // Set Channel to five
-//        PORTToggleBits(IOPORT_B, BIT_7);
-//        Nop(); Nop(); Nop(); // for safety
-//        shape_decay = ReadADC10(0);
-//        AcquireADC10();
-//        // Set Channel to six
-//        PORTToggleBits(IOPORT_B, BIT_7|BIT_8);
-//        Nop(); Nop(); Nop(); // for safety
-//        amp_attack = ReadADC10(0);
-//        AcquireADC10();
-//        // Set Channel to seven
-//        PORTToggleBits(IOPORT_B, BIT_7);
-//        Nop(); Nop(); Nop(); // for safety
-//        amp_decay = ReadADC10(0);
-//        AcquireADC10();
-        // Clear all the bits, yield
+        // Channel 4 (0b100) : amp envelope
+        PORTToggleBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
+        wait = 0; while(wait < 20) wait++;
+        AcquireADC10();
+        wait = 0; while(wait < 10) wait++;
+        amp_env = ReadADC10(0);
+        
+        // Channel 6 (0b101) : shape envelope
+        PORTSetBits(IOPORT_B, BIT_7);
+        wait = 0; while(wait < 20) wait++;
+        AcquireADC10();
+        wait = 0; while(wait < 10) wait++;
+        shape_env = ReadADC10(0);
+        
+        // Channel 7 (0b110) : shape amount
+        PORTToggleBits(IOPORT_B, BIT_7|BIT_8);
+        wait = 0; while(wait < 20) wait++;
+        AcquireADC10();
+        wait = 0; while(wait < 10) wait++;
+        shape_amt = ReadADC10(0);
          
         PT_YIELD_TIME_msec(50); // run approx. 20Hz
          
