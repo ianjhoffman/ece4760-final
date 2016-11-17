@@ -157,6 +157,8 @@ void initADC() {
 // TFT constants
 char tempo_label[] = "TEMPO";
 char table_label[] = "TABLE";
+char stepsel_label[] = "Step select:";
+char notesel_label[] = "Note select:";
 
 void initTFT() {
     int i;
@@ -181,6 +183,8 @@ void initTFT() {
     tft_setTextSize(3);
     tft_setCursor(36, 10); tft_writeString(tempo_label);
     tft_setCursor(197, 10); tft_writeString(table_label);
+    
+    // WE'RE GONNA WANT TO DRAW STEP SELECT/NOTE SELECT ON TOP OF SCREEN
 }
 
 //== Timer 2 interrupt handler ===========================================
