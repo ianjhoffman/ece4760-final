@@ -207,6 +207,7 @@ void __ISR(_TIMER_3_VECTOR, IPL2AUTO) Timer3Handler(void)
    }
 }
 
+
 //== Timer 2 interrupt handler ===========================================
 volatile unsigned int DAC_data ;// output value
 //volatile unsigned int exp_index; volatile fix16 multiplier; // Values used for the ramping
@@ -257,10 +258,15 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
     curr_step = step_accum >> 28; // 0 thru 15
     
     // If we switched to a new step, adjust TFT seq readout to reflect that
-//    if (old_step != curr_step) {
-//        tft_drawRect(1 + (old_step * 20), 115, 18, 100, ILI9340_BLUE);
-//        tft_drawRect(1 + (curr_step * 20), 115, 18, 100, ILI9340_RED); 
-//    }
+    if (old_step != curr_step && old_step == old_step_select) {
+        tft_drawRect(1 + (old_step * 20), 115, 18, 100, ILI9340_GREEN);
+        tft_drawRect(1 + (curr_step * 20), 115, 18, 100, ILI9340_RED); 
+    }
+    else if (old_step != curr_step){
+        tft_drawRect(1 + (old_step * 20), 115, 18, 100, ILI9340_BLUE);
+        tft_drawRect(1 + (curr_step * 20), 115, 18, 100, ILI9340_RED); 
+        
+    }
 
     // test for ready
     while (TxBufFullSPI2());
@@ -283,56 +289,56 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
 
         // Channel 0 (0b000) : tempo
         PORTClearBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
-        wait = 0; while(wait < 20) wait++;
+        wait = 0; while(wait < 40) wait++;
         AcquireADC10();
-        wait = 0; while(wait < 10) wait++;
+        wait = 0; while(wait < 20) wait++;
         tempo_index = ReadADC10(0) >> 4;
         
         // Channel 1 (0b001) : step select
         PORTSetBits(IOPORT_B, BIT_7);
-        wait = 0; while(wait < 20) wait++;
+        wait = 0; while(wait < 40) wait++;
         AcquireADC10();
-        wait = 0; while(wait < 10) wait++;
+        wait = 0; while(wait < 20) wait++;
         old_step_select = step_select;
         step_select = ReadADC10(0) >> 6;
         
         // Channel 2 (0b010) : note select
         PORTToggleBits(IOPORT_B, BIT_7|BIT_8);
-        wait = 0; while(wait < 20) wait++;
+        wait = 0; while(wait < 40) wait++;
         AcquireADC10();
-        wait = 0; while(wait < 10) wait++;
+        wait = 0; while(wait < 20) wait++;
         note_select = ReadADC10(0)/20;
 
         // Channel 3 (0b011) : blend
         PORTSetBits(IOPORT_B, BIT_7);
-        wait = 0; while(wait < 20) wait++;
+        wait = 0; while(wait < 40) wait++;
         AcquireADC10();
-        wait = 0; while(wait < 10) wait++;
+        wait = 0; while(wait < 20) wait++;
         blend = ReadADC10(0) << 22;
         // Don't flow into 8 -> 9 fade, that's bad/doesn't exist
         if ((blend >> 29) > 6) blend = 3758096384;
         
         // Channel 4 (0b100) : amp envelope
         PORTToggleBits(IOPORT_B, BIT_7|BIT_8|BIT_9);
-        wait = 0; while(wait < 20) wait++;
+        wait = 0; while(wait < 40) wait++;
         AcquireADC10();
-        wait = 0; while(wait < 10) wait++;
+        wait = 0; while(wait < 20) wait++;
         amp_env = ReadADC10(0);
         
         // we skip pin six completely
         
         // Channel 6 (0b110) : shape envelope
         PORTSetBits(IOPORT_B, BIT_8);
-        wait = 0; while(wait < 20) wait++;
+        wait = 0; while(wait < 40) wait++;
         AcquireADC10();
-        wait = 0; while(wait < 10) wait++;
+        wait = 0; while(wait < 20) wait++;
         shape_env = ReadADC10(0);
         
         // Channel 7 (0b111) : shape amount
         PORTSetBits(IOPORT_B, BIT_7);
-        wait = 0; while(wait < 20) wait++;
+        wait = 0; while(wait < 40) wait++;
         AcquireADC10();
-        wait = 0; while(wait < 10) wait++;
+        wait = 0; while(wait < 20) wait++;
         shape_amt = ReadADC10(0);
          
         PT_YIELD_TIME_msec(50); // run approx. 20Hz
@@ -408,8 +414,8 @@ void main(void) {
 
     // Turn on Timer3 for the note_select TFT update
     // period of 10550 and prescalar of 64 has frequency of 14.9998 Hz 
-    OpenTimer3(T3_ON | T3_SOURCE_INT | T3_PS_1_64, 41667);
-    ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_3);
+    OpenTimer3(T3_ON | T3_SOURCE_INT | T3_PS_1_32, 41667);
+    ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_2);
     mT3ClearIntFlag(); // and clear the interrupt flag
 
     initDAC();
