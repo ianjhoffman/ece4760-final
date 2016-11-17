@@ -397,8 +397,8 @@ void main(void) {
     mPORTBSetPinsDigitalOut(BIT_7 | BIT_8 | BIT_9);
     
     // Set button digital input pins (RA1, RB3, RB10, RB13)
-    mPORTASetPinsDigitalOut(BIT_1);
-    mPORTBSetPinsDigitalOut(BIT_3 | BIT_10 | BIT_13);
+    mPORTASetPinsDigitalIn(BIT_1);
+    mPORTBSetPinsDigitalIn(BIT_3 | BIT_10 | BIT_13);
     
     // round-robin scheduler for threads
     while (1) {

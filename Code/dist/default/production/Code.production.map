@@ -191,17 +191,16 @@ kseg0 Program-Memory Usage
 section                    address  length [bytes]      (dec)  Description
 -------                 ----------  -------------------------  -----------
 .rodata                 0x9d000000         0x4008       16392  Read-only const 
-.text                   0x9d004008         0x371c       14108  App's exec code 
-.text._vfprintf_cdnopux 0x9d007724          0xad0        2768   
-.rodata                 0x9d0081f4          0xf50        3920  Read-only const 
-.text                   0x9d009144          0x8bc        2236  App's exec code 
-.dinit                  0x9d009a00          0x2f0         752   
-.text.fputc             0x9d009cf0          0x144         324   
-.text._flsbuf           0x9d009e34          0x12c         300   
-.rodata                 0x9d009f60          0x104         260  Read-only const 
-.text.general_exception 0x9d00a064           0xdc         220   
-.text._mon_putc         0x9d00a140           0xd4         212   
-.rodata                 0x9d00a214            0x4           4  Read-only const 
+.text                   0x9d004008         0x3720       14112  App's exec code 
+.text._vfprintf_cdnopux 0x9d007728          0xad0        2768   
+.rodata                 0x9d0081f8          0xf50        3920  Read-only const 
+.text                   0x9d009148          0x8bc        2236  App's exec code 
+.dinit                  0x9d009a04          0x2f0         752   
+.text.fputc             0x9d009cf4          0x144         324   
+.text._flsbuf           0x9d009e38          0x12c         300   
+.rodata                 0x9d009f64          0x104         260  Read-only const 
+.text.general_exception 0x9d00a068           0xdc         220   
+.text._mon_putc         0x9d00a144           0xd4         212   
 .rodata                 0x9d00a218           0xd0         208  Read-only const 
 .text.write             0x9d00a2e8           0x9c         156   
 .text.SpiChnOpen        0x9d00a384           0x90         144   
@@ -247,7 +246,8 @@ section                    address  length [bytes]      (dec)  Description
 .text.INTEnableInterrup 0x9d00ac28            0x8           8   
 .text._on_reset         0x9d00ac30            0x8           8   
 .text._on_bootstrap     0x9d00ac38            0x8           8   
-      Total kseg0_program_mem used  :      0xac40       44096  34.7% of 0x1f000
+.rodata                 0x9d00ac40            0x4           4  Read-only const 
+      Total kseg0_program_mem used  :      0xac44       44100  34.7% of 0x1f000
 
 kseg0 Boot-Memory Usage
 section                    address  length [bytes]      (dec)  Description
@@ -311,7 +311,7 @@ section                    address  length [bytes]      (dec)  Description
 .bev_excpt              0xbfc00380           0x10          16  BEV-Exception 
          Total kseg1_boot_mem used  :       0x1e0         480  41.1% of 0x490
         --------------------------------------------------------------------------
-         Total Program Memory used  :      0xaf90       44944  34.0% of 0x20490
+         Total Program Memory used  :      0xaf94       44948  34.0% of 0x20490
         --------------------------------------------------------------------------
 
 
@@ -2186,7 +2186,7 @@ LOAD data_init
  .rodata        0x9d000000     0x4008 build/default/production/wavetable_master.o
                 0x9d000000                basic_eight
 
-.text           0x9d004008     0x371c
+.text           0x9d004008     0x3720
  .text          0x9d004008     0x151c build/default/production/tft_gfx.o
                 0x9d004008                tft_drawCircle
                 0x9d004268                tft_drawCircleHelper
@@ -2211,7 +2211,7 @@ LOAD data_init
                 0x9d0054b8                tft_gfx_setRotation
                 0x9d005514                tft_width
                 0x9d00551c                tft_height
- .text          0x9d005524     0x1184 build/default/production/wavetable_master.o
+ .text          0x9d005524     0x1188 build/default/production/wavetable_master.o
                 0x9d005524                PT_GetSerialBuffer
                 0x9d0056f0                PutSerialBuffer
                 0x9d005788                PT_DMA_PutSerialBuffer
@@ -2222,75 +2222,75 @@ LOAD data_init
                 0x9d005a80                initTFT
                 0x9d005c50                Timer2Handler
                 0x9d005eb0                main
- .text          0x9d0066a8     0x107c build/default/production/tft_master.o
-                0x9d0066a8                Mode16
-                0x9d0066bc                Mode8
-                0x9d0066d0                tft_init_hw
-                0x9d0066f4                tft_spiwrite
-                0x9d00672c                tft_spiwrite8
-                0x9d006778                tft_spiwrite16
-                0x9d0067b0                tft_writecommand
-                0x9d0067f0                tft_writecommand16
-                0x9d006830                tft_writedata
-                0x9d006878                tft_writedata16
-                0x9d0068c0                tft_begin
-                0x9d006c2c                tft_setAddrWindow
-                0x9d006ca8                tft_pushColor
-                0x9d006cf0                tft_drawPixel
-                0x9d0072bc                tft_drawFastVLine
-                0x9d00738c                tft_drawFastHLine
-                0x9d00745c                tft_fillScreen
-                0x9d00748c                tft_fillRect
-                0x9d0075ac                tft_Color565
-                0x9d0075d0                tft_setRotation
-                0x9d007694                delay_ms
-                0x9d0076e4                delay_us
+ .text          0x9d0066ac     0x107c build/default/production/tft_master.o
+                0x9d0066ac                Mode16
+                0x9d0066c0                Mode8
+                0x9d0066d4                tft_init_hw
+                0x9d0066f8                tft_spiwrite
+                0x9d006730                tft_spiwrite8
+                0x9d00677c                tft_spiwrite16
+                0x9d0067b4                tft_writecommand
+                0x9d0067f4                tft_writecommand16
+                0x9d006834                tft_writedata
+                0x9d00687c                tft_writedata16
+                0x9d0068c4                tft_begin
+                0x9d006c30                tft_setAddrWindow
+                0x9d006cac                tft_pushColor
+                0x9d006cf4                tft_drawPixel
+                0x9d0072c0                tft_drawFastVLine
+                0x9d007390                tft_drawFastHLine
+                0x9d007460                tft_fillScreen
+                0x9d007490                tft_fillRect
+                0x9d0075b0                tft_Color565
+                0x9d0075d4                tft_setRotation
+                0x9d007698                delay_ms
+                0x9d0076e8                delay_us
 
 .text._vfprintf_cdnopuxX
-                0x9d007724      0xad0
+                0x9d007728      0xad0
  .text._vfprintf_cdnopuxX
-                0x9d007724      0xad0 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libc.a(doprnt_cdnopuxX.eo)
-                0x9d007724                _vfprintf_cdnopuxX
+                0x9d007728      0xad0 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libc.a(doprnt_cdnopuxX.eo)
+                0x9d007728                _vfprintf_cdnopuxX
 
-.rodata         0x9d0081f4      0xf50
- .rodata        0x9d0081f4      0x558 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libmchp_peripheral_32MX250F128B.a(int_tbl_lib.o)
-                0x9d0081f4                __IntSrcTbl
-                0x9d00853c                __IntVectorTbl
- .rodata        0x9d00874c      0x4fc build/default/production/tft_gfx.o
- .rodata        0x9d008c48      0x4fc build/default/production/glcdfont.o
+.rodata         0x9d0081f8      0xf50
+ .rodata        0x9d0081f8      0x558 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libmchp_peripheral_32MX250F128B.a(int_tbl_lib.o)
+                0x9d0081f8                __IntSrcTbl
+                0x9d008540                __IntVectorTbl
+ .rodata        0x9d008750      0x4fc build/default/production/tft_gfx.o
+ .rodata        0x9d008c4c      0x4fc build/default/production/glcdfont.o
 
-.text           0x9d009144      0x8bc
- .text          0x9d009144      0x464 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/libgcc.a(_umoddi3.o)
-                0x9d009144                __umoddi3
- .text          0x9d0095a8      0x458 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/libgcc.a(_udivdi3.o)
-                0x9d0095a8                __udivdi3
+.text           0x9d009148      0x8bc
+ .text          0x9d009148      0x464 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/libgcc.a(_umoddi3.o)
+                0x9d009148                __umoddi3
+ .text          0x9d0095ac      0x458 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/libgcc.a(_udivdi3.o)
+                0x9d0095ac                __udivdi3
 
-.dinit          0x9d009a00      0x2f0
- .dinit         0x9d009a00      0x2f0 data_init
+.dinit          0x9d009a04      0x2f0
+ .dinit         0x9d009a04      0x2f0 data_init
 
-.text.fputc     0x9d009cf0      0x144
- .text.fputc    0x9d009cf0      0x144 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libc.a(_fputc_simple.o)
-                0x9d009cf0                fputc
+.text.fputc     0x9d009cf4      0x144
+ .text.fputc    0x9d009cf4      0x144 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libc.a(_fputc_simple.o)
+                0x9d009cf4                fputc
 
-.text._flsbuf   0x9d009e34      0x12c
- .text._flsbuf  0x9d009e34      0x12c /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libc.a(_flsbuf_simple.o)
-                0x9d009e34                _flsbuf
+.text._flsbuf   0x9d009e38      0x12c
+ .text._flsbuf  0x9d009e38      0x12c /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libc.a(_flsbuf_simple.o)
+                0x9d009e38                _flsbuf
 
-.rodata         0x9d009f60      0x104
- .rodata        0x9d009f60      0x104 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libc.a(ctype.o)
-                0x9d009f60                _ctype
+.rodata         0x9d009f64      0x104
+ .rodata        0x9d009f64      0x104 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libc.a(ctype.o)
+                0x9d009f64                _ctype
 
 .text.general_exception
-                0x9d00a064       0xdc
+                0x9d00a068       0xdc
  .text.general_exception
-                0x9d00a064       0xdc /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libpic32.a(general-exception.o)
-                0x9d00a064                _general_exception_context
+                0x9d00a068       0xdc /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libpic32.a(general-exception.o)
+                0x9d00a068                _general_exception_context
 
 .text._mon_putc
-                0x9d00a140       0xd4
+                0x9d00a144       0xd4
  .text._mon_putc
-                0x9d00a140       0xd4 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libpic32.a(_mon_putc.o)
-                0x9d00a140                _mon_putc
+                0x9d00a144       0xd4 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libpic32.a(_mon_putc.o)
+                0x9d00a144                _mon_putc
 
 .rodata         0x9d00a218       0xd0
  .rodata        0x9d00a218       0xd0 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libc.a(doprnt_cdnopuxX.eo)
@@ -2544,9 +2544,9 @@ LOAD data_init
                 0x9d00ac38        0x8 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libpic32.a(default-on-bootstrap.o)
                 0x9d00ac38                _on_bootstrap
 
-.rodata         0x9d00a214        0x4
- .rodata        0x9d00a214        0x4 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libmchp_peripheral_32MX250F128B.a(dma_reg_map_tbl_lib.o)
-                0x9d00a214                _DmaMapTbl
+.rodata         0x9d00ac40        0x4
+ .rodata        0x9d00ac40        0x4 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libmchp_peripheral_32MX250F128B.a(dma_reg_map_tbl_lib.o)
+                0x9d00ac40                _DmaMapTbl
 
 .text           0x00000000        0x0
  .text          0x00000000        0x0 /Applications/microchip/xc32/v1.40/bin/bin/../../lib/gcc/pic32mx/4.8.3/../../../../pic32mx/lib/libpic32.a(xc32_uart.o)
