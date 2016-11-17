@@ -185,8 +185,8 @@ void initTFT() {
     // Draw tempo/table labels
     tft_setTextColor(ILI9340_WHITE);
     tft_setTextSize(3);
-    tft_setCursor(36, 10); tft_writeString(tempo_label);
-    tft_setCursor(197, 10); tft_writeString(table_label);
+    tft_setCursor(7, 10); tft_writeString(tempo_label);
+    tft_setCursor(220, 10); tft_writeString(table_label);
     
     // WE'RE GONNA WANT TO DRAW STEP SELECT/NOTE SELECT ON TOP OF SCREEN
 }
@@ -345,6 +345,11 @@ static PT_THREAD (protothread_tft(struct pt *pt)) {
 static PT_THREAD (protothread_button(struct pt *pt)) {
     PT_BEGIN(pt);
     while(1) {
+        tft_fillCircle(100, 100, 2, mPORTAReadBits(BIT_1) ? ILI9340_YELLOW : ILI9340_BLACK);
+        tft_fillCircle(100, 120, 2, mPORTBReadBits(BIT_3) ? ILI9340_YELLOW : ILI9340_BLACK);
+        tft_fillCircle(100, 140, 2, mPORTBReadBits(BIT_10) ? ILI9340_YELLOW : ILI9340_BLACK);
+        tft_fillCircle(100, 160, 2, mPORTBReadBits(BIT_13) ? ILI9340_YELLOW : ILI9340_BLACK);
+        
         PT_YIELD_TIME_msec(50);
     }
     PT_END(pt);
