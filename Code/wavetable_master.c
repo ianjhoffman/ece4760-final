@@ -169,8 +169,15 @@ void initTFT() {
     }
     // Draw separator lines
     tft_drawLine(0, 105, 320, 105, ILI9340_WHITE); // horizontal above seq
-    tft_drawLine(160, 0, 160, 105, ILI9340_WHITE); // vertical separator
-    tft_drawLine(0, 40, 320, 40, ILI9340_WHITE); // horizontal under text
+    
+    tft_drawLine(107, 0, 107, 105, ILI9340_WHITE); // vertical separator 1
+    tft_drawLine(214, 0, 214, 105, ILI9340_WHITE); // vertical separator 2
+    
+    tft_drawLine(0, 40, 107, 40, ILI9340_WHITE); // horizontal under text 1
+    tft_drawLine(214, 40, 320, 40, ILI9340_WHITE); // horizontal under text 2
+    
+    tft_drawLine(107, 53, 214, 53, ILI9340_WHITE); // horizontal middle segment
+    
     
     // Draw active sequence
     for (i = 0; i < 16; i++) {
