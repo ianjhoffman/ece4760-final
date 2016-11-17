@@ -169,13 +169,10 @@ void initTFT() {
     }
     // Draw separator lines
     tft_drawLine(0, 105, 320, 105, ILI9340_WHITE); // horizontal above seq
-    
     tft_drawLine(107, 0, 107, 105, ILI9340_WHITE); // vertical separator 1
     tft_drawLine(214, 0, 214, 105, ILI9340_WHITE); // vertical separator 2
-    
     tft_drawLine(0, 40, 107, 40, ILI9340_WHITE); // horizontal under text 1
     tft_drawLine(214, 40, 320, 40, ILI9340_WHITE); // horizontal under text 2
-    
     tft_drawLine(107, 53, 214, 53, ILI9340_WHITE); // horizontal middle segment
     
     
@@ -260,7 +257,7 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 // === thread structures ============================================
 // thread control structs
 // note that UART input and output are threads
-static struct pt pt_tft, pt_mux;
+static struct pt pt_tft, pt_mux, pt_button;
 
 char test_buffer[60];
 volatile int wait;
@@ -345,6 +342,14 @@ static PT_THREAD (protothread_tft(struct pt *pt)) {
     PT_END(pt);
 }
 
+static PT_THREAD (protothread_button(struct pt *pt)) {
+    PT_BEGIN(pt);
+    while(1) {
+        PT_YIELD_TIME_msec(50);
+    }
+    PT_END(pt);
+}
+
 // === Main  ======================================================
 void main(void) {
     SYSTEMConfigPerformance(PBCLK);
@@ -360,6 +365,7 @@ void main(void) {
     // init the threads
     PT_INIT(&pt_tft);
     PT_INIT(&pt_mux);
+    PT_INIT(&pt_button);
 
     initADC();
     
@@ -388,6 +394,7 @@ void main(void) {
     while (1) {
         PT_SCHEDULE(protothread_tft(&pt_tft));
         PT_SCHEDULE(protothread_mux(&pt_mux));
+        PT_SCHEDULE(protothread_button(&pt_button));
     }
 } // main
 
