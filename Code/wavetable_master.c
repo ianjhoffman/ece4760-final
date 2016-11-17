@@ -387,8 +387,13 @@ void main(void) {
     mT2ClearIntFlag(); // and clear the interrupt flag
 
     initDAC();
-    // Set the MUX Channel Select Pins as outputs
-    mPORTBSetPinsDigitalOut(BIT_7 | BIT_8 | BIT_9);    //Set PINS 16,17,18 as outputs
+    
+    // Set the MUX Channel Select Pins as outputs (pins 16, 17, 18)
+    mPORTBSetPinsDigitalOut(BIT_7 | BIT_8 | BIT_9);
+    
+    // Set button digital input pins (RA1, RB3, RB10, RB13)
+    mPORTASetPinsDigitalOut(BIT_1);
+    mPORTBSetPinsDigitalOut(BIT_3 | BIT_10 | BIT_13);
     
     // round-robin scheduler for threads
     while (1) {
