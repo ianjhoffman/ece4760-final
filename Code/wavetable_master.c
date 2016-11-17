@@ -407,8 +407,8 @@ void main(void) {
     mT2ClearIntFlag(); // and clear the interrupt flag
 
     // Turn on Timer3 for the note_select TFT update
-    // period of 10550 and prescalar of 64 has frequency of 59.998 Hz 
-    OpenTimer3(T3_ON | T3_SOURCE_INT | T3_PS_1_64, 10417);
+    // period of 10550 and prescalar of 64 has frequency of 14.9998 Hz 
+    OpenTimer3(T3_ON | T3_SOURCE_INT | T3_PS_1_64, 41667);
     ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_3);
     mT3ClearIntFlag(); // and clear the interrupt flag
 
