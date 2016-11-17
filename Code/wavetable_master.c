@@ -167,6 +167,8 @@ void initTFT() {
         tft_drawRect(1 + (i * 20), 115, 18, 100, ILI9340_BLUE);
         tft_drawCircle(9 + (i * 20), 227, 5, ILI9340_CYAN);
     }
+    // first sequence box is selected by default 
+    tft_drawRect(1, 115, 18, 100, ILI9340_GREEN);
     // Draw separator lines
     tft_drawLine(0, 105, 320, 105, ILI9340_WHITE); // horizontal above seq
     tft_drawLine(107, 0, 107, 105, ILI9340_WHITE); // vertical separator 1
@@ -189,6 +191,20 @@ void initTFT() {
     tft_setCursor(220, 10); tft_writeString(table_label);
     
     // WE'RE GONNA WANT TO DRAW STEP SELECT/NOTE SELECT ON TOP OF SCREEN
+}
+
+// Timer 3 interrupt handler
+
+
+void __ISR(_TIMER_3_VECTOR, IPL2AUTO) Timer3Handler(void)
+{
+    mT3ClearIntFlag();
+        // If we switched to a new step, adjust TFT seq readout to reflect that
+   if (old_step_select != step_select) 
+   {
+       tft_drawRect(1 + (old_step_select * 20), 115, 18, 100, ILI9340_BLUE);
+       tft_drawRect(1 + (step_select * 20), 115, 18, 100, ILI9340_GREEN); 
+   }
 }
 
 //== Timer 2 interrupt handler ===========================================
@@ -386,10 +402,15 @@ void main(void) {
     // Set up timer2 on,  interrupts, internal clock, 100KHz
     // period of 200
     OpenTimer2(T2_ON | T2_SOURCE_INT | T2_PS_1_2, 200);
-
     // set up the timer interrupt with a priority of 2
     ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
     mT2ClearIntFlag(); // and clear the interrupt flag
+
+    // Turn on Timer3 for the note_select TFT update
+    // period of 10550 and prescalar of 64 has frequency of 59.998 Hz 
+    OpenTimer3(T3_ON | T3_SOURCE_INT | T3_PS_1_64, 10417);
+    ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_3);
+    mT3ClearIntFlag(); // and clear the interrupt flag
 
     initDAC();
     
