@@ -16,9 +16,10 @@
 #include <plib.h>
 #include "pt_cornell_TFT.h"
 
-// Include basic 8 waveform table
+// Include wave tables
 #include "Basic8Tab.h"
-// #include "SawSyncEnv.h"
+#include "SawSyncEnv.h"
+#include "SawFilter.h"
 
 // Include frequency phase accumulator table
 #include "freq_to_accum.h"
@@ -39,13 +40,30 @@ char steps_on[16] = {1, 0, 1, 0,
 volatile unsigned char old_step_select = 0;
 volatile unsigned char step_select = 0;
 volatile unsigned char note_select = 0;
+volatile unsigned char old_step = 0;
+volatile unsigned char curr_step = 0;
 
 // Synthesis modulation params
 volatile unsigned int amp_env = 0;
 volatile unsigned int shape_env = 0;
 volatile unsigned int shape_amt = 0;
 
-#define TEST_TABLE basic_eight
+// buttons
+volatile char seq_toggle = 0;
+volatile char tab_toggle = 0;
+volatile char rest_toggle = 0;
+volatile char note_write = 0;
+
+// button overall states
+volatile char seq_active = 0;
+
+// table indexing
+static unsigned int *tables[3] = {
+    basic_eight,
+    sawsync_env,
+    saw_filter
+};
+volatile unsigned int table_index = 0;
 
 // fix16 definition
 typedef signed int fix16 ;
@@ -194,17 +212,23 @@ void initTFT() {
 }
 
 // Timer 3 interrupt handler
-
-
+volatile char to_reset = 0;
+volatile char update_flag = 0;
 void __ISR(_TIMER_3_VECTOR, IPL2AUTO) Timer3Handler(void)
 {
     mT3ClearIntFlag();
-        // If we switched to a new step, adjust TFT seq readout to reflect that
-   if (old_step_select != step_select) 
-   {
-       tft_drawRect(1 + (old_step_select * 20), 115, 18, 100, ILI9340_BLUE);
-       tft_drawRect(1 + (step_select * 20), 115, 18, 100, ILI9340_GREEN); 
-   }
+    // If we switched to a new step, adjust TFT seq readout to reflect that
+    if (old_step_select != step_select) {
+        tft_drawRect(1 + (old_step_select * 20), 115, 18, 100, 
+                (old_step_select == curr_step) ? ILI9340_RED : ILI9340_BLUE);
+        tft_drawRect(1 + (step_select * 20), 115, 18, 100, ILI9340_GREEN); 
+    }
+    if (update_flag) {
+        tft_drawRect(1 + (to_reset * 20), 115, 18, 100, 
+                (to_reset == step_select) ? ILI9340_GREEN : ILI9340_BLUE);
+        tft_drawRect(1 + (curr_step * 20), 115, 18, 100, ILI9340_RED);
+        update_flag = 0;
+    }
 }
 
 
@@ -223,8 +247,6 @@ volatile unsigned int tab1_offset;
 volatile unsigned int tab2_offset;
 volatile unsigned int blender;
 
-volatile unsigned char old_step = 0;
-volatile unsigned char curr_step = 0;
 volatile unsigned int step_accum = 0;
 
 void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
@@ -241,8 +263,9 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
     
     // Get sample to write
     // index of blend is bottom 8 bits of blend
-    DAC_data = WAVE_BLEND(((TEST_TABLE + tab1_offset)[phase_acc>>23]), 
-                          ((TEST_TABLE + tab2_offset)[phase_acc>>23]),
+    // (tables[table_index])
+    DAC_data = WAVE_BLEND((((tables[table_index]) + tab1_offset)[phase_acc>>23]), 
+                          (((tables[table_index]) + tab2_offset)[phase_acc>>23]),
                           (blender & 0xff)) >> 20;
     
     if (!steps_on[curr_step]) DAC_data = 0; // Rest
@@ -253,19 +276,14 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
     phase_acc += freq_accumulators[step_notes[curr_step]];
     
     // Update step in sequence
-    step_accum += tempo_accumulators[tempo_index];
+    step_accum += (seq_active) ? tempo_accumulators[tempo_index] : 0;
     old_step = curr_step;
     curr_step = step_accum >> 28; // 0 thru 15
     
     // If we switched to a new step, adjust TFT seq readout to reflect that
-    if (old_step != curr_step && old_step == old_step_select) {
-        tft_drawRect(1 + (old_step * 20), 115, 18, 100, ILI9340_GREEN);
-        tft_drawRect(1 + (curr_step * 20), 115, 18, 100, ILI9340_RED); 
-    }
-    else if (old_step != curr_step){
-        tft_drawRect(1 + (old_step * 20), 115, 18, 100, ILI9340_BLUE);
-        tft_drawRect(1 + (curr_step * 20), 115, 18, 100, ILI9340_RED); 
-        
+    if (old_step != curr_step) {
+        to_reset = old_step;
+        update_flag = 1;
     }
 
     // test for ready
@@ -364,13 +382,38 @@ static PT_THREAD (protothread_tft(struct pt *pt)) {
     PT_END(pt);
 }
 
+volatile char prev_seq_toggle = 0;
+volatile char prev_tab_toggle = 0;
+volatile char prev_rest_toggle = 0;
+volatile char prev_note_write = 0;
 static PT_THREAD (protothread_button(struct pt *pt)) {
     PT_BEGIN(pt);
     while(1) {
-        tft_fillCircle(100, 100, 2, mPORTAReadBits(BIT_1) ? ILI9340_YELLOW : ILI9340_BLACK);
-        tft_fillCircle(100, 120, 2, mPORTBReadBits(BIT_3) ? ILI9340_YELLOW : ILI9340_BLACK);
-        tft_fillCircle(100, 140, 2, mPORTBReadBits(BIT_10) ? ILI9340_YELLOW : ILI9340_BLACK);
-        tft_fillCircle(100, 160, 2, mPORTBReadBits(BIT_13) ? ILI9340_YELLOW : ILI9340_BLACK);
+        // Save previous values
+        prev_seq_toggle = seq_toggle;
+        prev_tab_toggle = tab_toggle;
+        prev_rest_toggle = rest_toggle;
+        prev_note_write = note_write;
+        
+        // Read in the four buttons
+        seq_toggle = mPORTAReadBits(BIT_1);
+        tab_toggle = mPORTBReadBits(BIT_3);
+        rest_toggle = mPORTBReadBits(BIT_10);
+        note_write = mPORTBReadBits(BIT_13);
+        
+        // If they were just pressed, do stuff
+        if ((seq_toggle ^ prev_seq_toggle) && seq_toggle) seq_active ^= 1;
+        if ((tab_toggle ^ prev_tab_toggle) && tab_toggle) {
+            table_index = (table_index == 2) ? 0 : (table_index + 1);
+        }
+        /*
+        if ((rest_toggle ^ prev_rest_toggle) && rest_toggle) {
+            
+        }
+        if ((note_write ^ prev_note_write) && note_write) {
+            
+        }
+        */
         
         PT_YIELD_TIME_msec(50);
     }
