@@ -23,12 +23,28 @@ envelope_keyframes =
 env_increments = envelope_keyframes.map {|x| x.map {|y| ( INCREMENTS_TO_OVERFLOW * (1.0/ISR_FREQUENCY) * y).round } }
 
 # print envelope keyframes in C header format
+puts "#ifndef ENV_KEYFRAMES"
+puts "#define ENV_KEYFRAMES\n"
+puts
+puts "// ENVELOPE KEYFRAMES:"
+puts "//    - 1ms rise, 2ms fall"
+puts "//    - 1ms rise, 100ms fall"
+puts "//    - 1ms rise, 800ms fall"
+puts "//    - 100ms rise, 667ms fall"
+puts "//    - 400ms rise, 400ms fall"
+puts "//    - 667ms rise, 100ms fall"
+puts "//    - 800ms rise, 1ms fall"
+puts "//    - 100ms rise, 1ms fall"
+puts "//    - 2ms rise, 1ms fall"
+puts
 puts "const unsigned int atk_incs[] = {"
 env_increments.each_with_index {|x, idx| puts "    #{x[0]}#{(idx != 8) ? "," : ""}"}
 puts "};"
-
+puts
 puts "const unsigned int decay_incs[] = {"
 env_increments.each_with_index {|x, idx| puts "    #{x[1]}#{(idx != 8) ? "," : ""}"}
 puts "};"
-
+puts
 puts "const unsigned int num_keyframes = 9;"
+puts
+puts "#endif"
