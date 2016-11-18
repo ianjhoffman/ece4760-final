@@ -27,15 +27,15 @@
 #include "tempo_to_accum.h"
 
 // Sequencer values
-char step_notes[16] = {12, 0, 24, 0,
-                       36, 0, 24, 0,
-                       12, 0, 19, 0,
-                       0, 17, 19, 20};
+volatile char step_notes[16] = {12, 0, 24, 0,
+                                36, 0, 24, 0,
+                                12, 0, 19, 0,
+                                0, 17, 19, 20};
 
-char steps_on[16] = {1, 0, 1, 0,
-                     1, 0, 1, 0,
-                     1, 0, 1, 0,
-                     0, 1, 1, 1};
+volatile char steps_on[16] = {1, 0, 1, 0,
+                              1, 0, 1, 0,
+                              1, 0, 1, 0,
+                              0, 1, 1, 1};
 
 volatile unsigned char old_step_select = 0;
 volatile unsigned char step_select = 0;
@@ -58,10 +58,11 @@ volatile char note_write = 0;
 volatile char seq_active = 0;
 
 // table indexing
-static unsigned int *tables[3] = {
+static unsigned int *tables[4] = {
     basic_eight,
     sawsync_env,
-    saw_filter
+    saw_filter,
+    basic_eight // placeholder until fourth table exists
 };
 volatile unsigned int table_index = 0;
 
@@ -326,6 +327,7 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
         AcquireADC10();
         wait = 0; while(wait < 20) wait++;
         note_select = ReadADC10(0)/20;
+        if (note_select > 48) note_select = 48; // don't flow into indices 49+
 
         // Channel 3 (0b011) : blend
         PORTSetBits(IOPORT_B, BIT_7);
@@ -367,15 +369,22 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
 // system 1 second interval tick
 int sys_time_seconds ;
 
+volatile char tab_number[2];
 static PT_THREAD (protothread_tft(struct pt *pt)) {
     PT_BEGIN(pt);
     while(1) {
         // Write BPM to screen
-        tft_fillRect(19, 49, 100, 20, ILI9340_BLACK);
+        tft_fillRect(9, 59, 85, 20, ILI9340_BLACK);
         sprintf(test_buffer, "%d BPM", tempo_vals[tempo_index]);
         tft_setTextColor(ILI9340_WHITE);
         tft_setTextSize(2);
-        tft_setCursor(20, 50); tft_writeString(test_buffer);
+        tft_setCursor(10, 60); tft_writeString(test_buffer);
+        
+        // Write current table to screen
+        tft_fillRect(255, 59, 30, 20, ILI9340_BLACK);
+        sprintf(tab_number, "%d", table_index + 1);
+        tft_setTextColor(ILI9340_WHITE);
+        tft_setCursor(256, 60); tft_writeString(tab_number);
         
         PT_YIELD_TIME_msec(100);
     }
@@ -398,22 +407,33 @@ static PT_THREAD (protothread_button(struct pt *pt)) {
         // Read in the four buttons
         seq_toggle = mPORTAReadBits(BIT_1);
         tab_toggle = mPORTBReadBits(BIT_3);
-        rest_toggle = mPORTBReadBits(BIT_10);
+        rest_toggle = mPORTBReadBits(BIT_10); // should be BIT_10
         note_write = mPORTBReadBits(BIT_13);
         
         // If they were just pressed, do stuff
         if ((seq_toggle ^ prev_seq_toggle) && seq_toggle) seq_active ^= 1;
         if ((tab_toggle ^ prev_tab_toggle) && tab_toggle) {
-            table_index = (table_index == 2) ? 0 : (table_index + 1);
+            table_index = (table_index == 3) ? 0 : (table_index + 1);
         }
-        /*
         if ((rest_toggle ^ prev_rest_toggle) && rest_toggle) {
-            
+            steps_on[step_select] ^= 1;
+            // Draw rest/not_rest
+            tft_fillCircle(9 + (step_select * 20), 227, 5, 
+                (steps_on[step_select]) ? ILI9340_CYAN : ILI9340_BLACK);
+            if (!steps_on[step_select]) {
+                tft_drawCircle(9 + (step_select * 20), 227, 5, ILI9340_CYAN);
+            }
         }
         if ((note_write ^ prev_note_write) && note_write) {
-            
+            // Erase old note
+            tft_fillRect(2 + (step_select * 20), 
+                212 - (step_notes[step_select] << 1), 16, 2, ILI9340_BLACK);
+            // Change note
+            step_notes[step_select] = note_select;
+            // Draw new note
+            tft_fillRect(2 + (step_select * 20), 
+                212 - (step_notes[step_select] << 1), 16, 2, ILI9340_CYAN);
         }
-        */
         
         PT_YIELD_TIME_msec(50);
     }
@@ -464,11 +484,11 @@ void main(void) {
     initDAC();
     
     // Set the MUX Channel Select Pins as outputs (pins 16, 17, 18)
-    mPORTBSetPinsDigitalOut(BIT_7 | BIT_8 | BIT_9);
+    mPORTBSetPinsDigitalOut(BIT_7|BIT_8|BIT_9);
     
     // Set button digital input pins (RA1, RB3, RB10, RB13), for buttons
     mPORTASetPinsDigitalIn(BIT_1);
-    mPORTBSetPinsDigitalIn(BIT_3 | BIT_10 | BIT_13);
+    mPORTBSetPinsDigitalIn(BIT_3|BIT_10|BIT_13);
     
     // round-robin scheduler for threads
     while (1) {
