@@ -1,9 +1,10 @@
 /*
- * File:        TFT_keypad_BRL4.c
- * Author:      Bruce Land
- * Adapted from:
- *              main.c by
- * Author:      Syed Tahmid Mahbub
+ * File:        wavetable_master.c
+ * Authors:     
+ *              Ian Hoffman          ( ijh6 )
+ *              Joval Mathew         ( jjm448 )
+ *              Balazs Szegletes     ( bas332 )
+ *
  * Target PIC:  PIC32MX250F128B
  */
 
@@ -20,6 +21,7 @@
 #include "Basic8Tab.h"
 #include "SawSyncEnv.h"
 #include "SawFilter.h"
+#include "VariedDigital.h"
 
 // Include frequency phase accumulator table
 #include "freq_to_accum.h"
@@ -62,7 +64,7 @@ static unsigned int *tables[4] = {
     basic_eight,
     sawsync_env,
     saw_filter,
-    basic_eight // placeholder until fourth table exists
+    varied_digital // placeholder until fourth table exists
 };
 volatile unsigned int table_index = 0;
 

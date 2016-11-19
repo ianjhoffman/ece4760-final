@@ -10,5 +10,6 @@ pt.h  \
  Basic8Tab.h  \
 SawSyncEnv.h  \
 SawFilter.h  \
+VariedDigital.h  \
 freq_to_accum.h  \
-tempo_to_accum.h 
+ tempo_to_accum.h 
