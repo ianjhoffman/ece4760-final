@@ -409,14 +409,18 @@ static PT_THREAD (protothread_button(struct pt *pt)) {
         // Read in the four buttons
         seq_toggle = mPORTAReadBits(BIT_1);
         tab_toggle = mPORTBReadBits(BIT_3);
-        rest_toggle = mPORTBReadBits(BIT_10); // should be BIT_10
-        note_write = mPORTBReadBits(BIT_13);
+        rest_toggle = mPORTAReadBits(BIT_2); // should be BIT_10
+        note_write = mPORTAReadBits(BIT_3);
         
         // If they were just pressed, do stuff
+        // Turn the music sequence on and off
         if ((seq_toggle ^ prev_seq_toggle) && seq_toggle) seq_active ^= 1;
+        
+        // Cycle through the wave table
         if ((tab_toggle ^ prev_tab_toggle) && tab_toggle) {
             table_index = (table_index == 3) ? 0 : (table_index + 1);
         }
+        // Toggle rests on the selected (green) note
         if ((rest_toggle ^ prev_rest_toggle) && rest_toggle) {
             steps_on[step_select] ^= 1;
             // Draw rest/not_rest
@@ -426,6 +430,7 @@ static PT_THREAD (protothread_button(struct pt *pt)) {
                 tft_drawCircle(9 + (step_select * 20), 227, 5, ILI9340_CYAN);
             }
         }
+        // Save the current note to the sequence 
         if ((note_write ^ prev_note_write) && note_write) {
             // Erase old note
             tft_fillRect(2 + (step_select * 20), 
@@ -488,9 +493,9 @@ void main(void) {
     // Set the MUX Channel Select Pins as outputs (pins 16, 17, 18)
     mPORTBSetPinsDigitalOut(BIT_7|BIT_8|BIT_9);
     
-    // Set button digital input pins (RA1, RB3, RB10, RB13), for buttons
-    mPORTASetPinsDigitalIn(BIT_1);
-    mPORTBSetPinsDigitalIn(BIT_3|BIT_10|BIT_13);
+    // Set button digital input pins (RA1, RB3, Ra2, RA3), for buttons
+    mPORTASetPinsDigitalIn(BIT_1|BIT_2|BIT_3);
+    mPORTBSetPinsDigitalIn(BIT_3);
     
     // round-robin scheduler for threads
     while (1) {
