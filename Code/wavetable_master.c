@@ -64,7 +64,7 @@ static unsigned int *tables[4] = {
     basic_eight,
     sawsync_env,
     saw_filter,
-    varied_digital // placeholder until fourth table exists
+    varied_digital 
 };
 volatile unsigned int table_index = 0;
 
@@ -409,7 +409,7 @@ static PT_THREAD (protothread_button(struct pt *pt)) {
         // Read in the four buttons
         seq_toggle = mPORTAReadBits(BIT_1);
         tab_toggle = mPORTBReadBits(BIT_3);
-        rest_toggle = mPORTAReadBits(BIT_2); // should be BIT_10
+        rest_toggle = mPORTAReadBits(BIT_2); 
         note_write = mPORTAReadBits(BIT_3);
         
         // If they were just pressed, do stuff
@@ -493,7 +493,7 @@ void main(void) {
     // Set the MUX Channel Select Pins as outputs (pins 16, 17, 18)
     mPORTBSetPinsDigitalOut(BIT_7|BIT_8|BIT_9);
     
-    // Set button digital input pins (RA1, RB3, Ra2, RA3), for buttons
+    // Set button digital input pins (RA1, RB3, RA2, RA3), for buttons
     mPORTASetPinsDigitalIn(BIT_1|BIT_2|BIT_3);
     mPORTBSetPinsDigitalIn(BIT_3);
     
