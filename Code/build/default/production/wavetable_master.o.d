@@ -12,4 +12,5 @@ SawSyncEnv.h  \
 SawFilter.h  \
 VariedDigital.h  \
 freq_to_accum.h  \
- tempo_to_accum.h 
+ tempo_to_accum.h  \
+env_keyframes.h 

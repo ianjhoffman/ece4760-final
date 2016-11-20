@@ -27,6 +27,8 @@
 #include "freq_to_accum.h"
 // Include tempo phase accumulator table
 #include "tempo_to_accum.h"
+// Include envelope phase accumulator table
+#include "env_keyframes.h"
 
 // Sequencer values
 volatile char step_notes[16] = {12, 0, 24, 0,
@@ -50,6 +52,14 @@ volatile unsigned int amp_env = 0;
 volatile unsigned int shape_env = 0;
 volatile unsigned int shape_amt = 0;
 
+// Synth mod params translated into concrete values
+volatile unsigned int amp_rise_acc = 0;
+volatile unsigned int amp_fall_acc = 0;
+volatile unsigned int shp_rise_acc = 0;
+volatile unsigned int shp_fall_acc = 0;
+volatile char amp_rising = 0;
+volatile char shp_rising = 0;
+
 // buttons
 volatile char seq_toggle = 0;
 volatile char tab_toggle = 0;
@@ -64,7 +74,7 @@ static unsigned int *tables[4] = {
     basic_eight,
     sawsync_env,
     saw_filter,
-    varied_digital 
+    varied_digital
 };
 volatile unsigned int table_index = 0;
 
@@ -75,13 +85,15 @@ typedef signed int fix16 ;
 #define SS      LATAbits.LATA4
 #define dirSS   TRISAbits.TRISA4
 
-// DMA blend tri/saw test tables
 #define WAVE_TABLE_SIZE 512
+#define MAX_INC 4294967295
 //#define exp_table_size 1000
 //volatile fix16 exp_table[exp_table_size]; 
 
 // Wave blending macro for wavetable
 #define WAVE_BLEND(sample1, sample2, blend) (((255 - blend) * (sample1 >> 8)) + (blend * (sample2 >> 8)))
+// Envelope blending macro for modal envelope functionality (4-bit blending)
+#define ENV_BLEND(acc1, acc2, blend) (((15 - blend) * (acc1 >> 4)) + (blend * (acc2 >> 4)))
 
 // the DDS units
 //volatile unsigned long phase_acc = 0; // synthesis phase acc
@@ -249,8 +261,10 @@ volatile int spiClkDiv = 2 ; // 20 MHz max speed for this DAC
 volatile unsigned int tab1_offset;
 volatile unsigned int tab2_offset;
 volatile unsigned int blender;
-
 volatile unsigned int step_accum = 0;
+volatile unsigned int amp_val = 0;
+volatile unsigned int shp_val = 0;
+volatile unsigned int shp_env_to_add = 0;
 
 void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 {
@@ -258,7 +272,9 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
     SS = 0; // CS low during write
     
     // Get blend value
-    blender = blend >> 21; // Get top 11 bits
+    shp_env_to_add = (shp_val >> 8) * shape_amt; // scale by mod amount
+    shp_env_to_add = (MAX_INC - blend > shp_env_to_add) ? shp_env_to_add : (MAX_INC - blend);
+    blender = (blend + shp_env_to_add) >> 21; // Get top 11 bits
     
     // Get sub-tables to blend between
     tab1_offset = ((blender & 0x700)) << 1;
@@ -269,11 +285,13 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
     // (tables[table_index])
     DAC_data = WAVE_BLEND((((tables[table_index]) + tab1_offset)[phase_acc>>23]), 
                           (((tables[table_index]) + tab2_offset)[phase_acc>>23]),
-                          (blender & 0xff)) >> 20;
+                          (blender & 0xff));
     
-    if (!steps_on[curr_step]) DAC_data = 0; // Rest
+    // Scale output by amp envelope
+    DAC_data = (DAC_data >> 8) * (amp_val >> 24);
     
-    WriteSPI2( DAC_config_chan_A | DAC_data );
+    // Write sample to DAC, shifting into DAC's 12-bit range
+    WriteSPI2( DAC_config_chan_A | DAC_data >> 20 );
     
     // Update phase accumulator
     phase_acc += freq_accumulators[step_notes[curr_step]];
@@ -283,10 +301,28 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
     old_step = curr_step;
     curr_step = step_accum >> 28; // 0 thru 15
     
+    // Update amp envelope value
+    if (amp_rising) {
+        amp_val = (MAX_INC - amp_val < amp_rise_acc) ? MAX_INC : (amp_val + amp_rise_acc);
+        if (amp_val == MAX_INC) amp_rising = 0;
+    } else {
+        amp_val = (amp_val < amp_fall_acc) ? 0 : (amp_val - amp_fall_acc);
+    }
+    // Update shape envelope value
+    if (shp_rising) {
+        shp_val = (MAX_INC - shp_val < shp_rise_acc) ? MAX_INC : (shp_val + shp_rise_acc);
+        if (shp_val == MAX_INC) shp_rising = 0;
+    } else {
+        shp_val = (shp_val < shp_fall_acc) ? 0 : (shp_val - shp_fall_acc);
+    }
+    
     // If we switched to a new step, adjust TFT seq readout to reflect that
+    // and set envelopes to rising if the note is not a rest
     if (old_step != curr_step) {
         to_reset = old_step;
         update_flag = 1;
+        amp_rising = steps_on[curr_step];
+        shp_rising = amp_rising;
     }
 
     // test for ready
@@ -346,6 +382,11 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
         AcquireADC10();
         wait = 0; while(wait < 20) wait++;
         amp_env = ReadADC10(0);
+        // Set amp rise and fall accumulators
+        amp_rise_acc = ENV_BLEND((atk_incs[amp_env >> 7]), 
+                (atk_incs[(amp_env >> 7) + 1]), (amp_env & 0xf));
+        amp_fall_acc = ENV_BLEND((decay_incs[amp_env >> 7]), 
+                (decay_incs[(amp_env >> 7) + 1]), (amp_env & 0xf));
         
         // we skip pin six completely
         
@@ -355,16 +396,20 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
         AcquireADC10();
         wait = 0; while(wait < 20) wait++;
         shape_env = ReadADC10(0);
+        // Set shape rise and fall accumulators
+        shp_rise_acc = ENV_BLEND((atk_incs[shape_env >> 7]), 
+                (atk_incs[(shape_env >> 7) + 1]), (shape_env & 0xf));
+        shp_fall_acc = ENV_BLEND((atk_incs[shape_env >> 7]), 
+                (decay_incs[(shape_env >> 7) + 1]), (shape_env & 0xf));
         
         // Channel 7 (0b111) : shape amount
         PORTSetBits(IOPORT_B, BIT_7);
         wait = 0; while(wait < 40) wait++;
         AcquireADC10();
         wait = 0; while(wait < 20) wait++;
-        shape_amt = ReadADC10(0);
+        shape_amt = ReadADC10(0) >> 2; // 0 to 255
          
         PT_YIELD_TIME_msec(50); // run approx. 20Hz
-         
     }
     PT_END(pt);
 }
