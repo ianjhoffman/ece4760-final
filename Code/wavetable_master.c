@@ -78,9 +78,6 @@ static unsigned int *tables[4] = {
 };
 volatile unsigned int table_index = 0;
 
-// fix16 definition
-typedef signed int fix16 ;
-
 // Set up variables for DAC Chip Select
 #define SS      LATAbits.LATA4
 #define dirSS   TRISAbits.TRISA4
@@ -96,7 +93,6 @@ typedef signed int fix16 ;
 #define ENV_BLEND(acc1, acc2, blend) (((15 - blend) * (acc1 >> 4)) + (blend * (acc2 >> 4)))
 
 // the DDS units
-//volatile unsigned long phase_acc = 0; // synthesis phase acc
 volatile unsigned int phase_acc = 0; // synthesis phase acc
 volatile unsigned int blend = 0;
 volatile unsigned int tempo_index = 25; // 120 BPM
@@ -104,17 +100,6 @@ volatile unsigned int tempo_index = 25; // 120 BPM
 // A-channel, 1x, active
 #define DAC_config_chan_A 0b0011000000000000
 #define DAC_config_chan_B 0b1011000000000000
-
-// === 16:16 fixed point macros ==========================================
-#define multfix16(a,b) ((fix16)(((( signed long long)(a))*(( signed long long)(b)))>>16)) //multiply two fixed 16:16
-#define float2fix16(a) ((fix16)((a)*65536.0)) // 2^16
-#define fix2float16(a) ((float)(a)/65536.0)
-#define fix2int16(a)    ((int)((a)>>16))
-#define int2fix16(a)    ((fix16)((a)<<16))
-#define divfix16(a,b) ((fix16)((((signed long long)(a)<<16)/(b)))) 
-#define sqrtfix16(a) (float2fix16(sqrt(fix2float16(a)))) 
-#define absfix16(a) abs(a)
-#define onefix16 0x00010000 // int2fix16(1)
 
 // ===== Pulldown Macros ==========================
 // PORT B
