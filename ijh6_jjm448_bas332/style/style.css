@@ -1,0 +1,41 @@
+/* CUSTOM CSS STYLE RULES */
+
+#title {
+	text-align: center;
+	display: block;
+}
+
+#authors {
+	text-align: center;
+	list-style: none;
+	padding: 0;
+}
+
+#table-of-contents {
+	list-style: none;
+	width: 320px;
+	padding: 0;
+	display: block;
+	margin: 0 auto;
+	border: 1px solid #000;
+}
+
+#table-of-contents li {
+	width: 300px;
+	text-align: center;
+	padding: 10px;
+	background-color: #ddd;
+}
+
+.report-section {
+	padding: 5px;
+	border: 1px solid #000;
+	margin-bottom: 30px;
+	margin-top: 10px;
+}
+
+.section-header {
+	display: block;
+	margin: 0 auto;
+	text-align: center;
+}
