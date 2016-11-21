@@ -1,8 +1,27 @@
 /* CUSTOM CSS STYLE RULES */
 
+body {
+	margin: 0;
+	font-family: 'Roboto', sans-serif;
+}
+
+h1, h2 {
+	font-family: 'Lato', sans-serif;
+	font-style: bold;
+}
+
+a:link, a:hover, a:visited, a:active {
+	text-decoration: none;
+	color: #000;
+}
+
 #title {
 	text-align: center;
-	display: block;
+    display: block;
+    width: 100%;
+    padding: 10px 0px;
+    background-color: #eee;
+    border-bottom: 1px solid #000;
 }
 
 #authors {
@@ -13,25 +32,49 @@
 
 #table-of-contents {
 	list-style: none;
-	width: 320px;
+	width: 300px;
 	padding: 0;
 	display: block;
 	margin: 0 auto;
-	border: 1px solid #000;
+	border: 1px solid #333;
+	overflow: hidden;
+	border-radius: 10px;
+	box-shadow: 0px 3px #333;
 }
 
 #table-of-contents li {
 	width: 300px;
 	text-align: center;
-	padding: 10px;
 	background-color: #ddd;
+	border-bottom: 1px solid #555;
+
+	transition: background-color .3s;
+	-webkit-transition: background-color .3s;
+}
+
+#table-of-contents li:hover {
+	background-color: #999;
+}
+
+#table-of-contents li a {
+	display: block;
+	padding: 10px;
+
+	transition: color .3s;
+	-webkit-transition: color .3s;
+}
+
+#table-of-contents li a:hover {
+	color: #eee;
 }
 
 .report-section {
-	padding: 5px;
-	border: 1px solid #000;
-	margin-bottom: 30px;
-	margin-top: 10px;
+	padding: 10px;
+    border: 1px solid #ccc;
+    margin: 20px;
+    margin-bottom: 30px;
+    margin-top: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, .25);
 }
 
 .section-header {
