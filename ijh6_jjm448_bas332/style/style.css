@@ -113,7 +113,7 @@ a:link, a:hover, a:visited, a:active {
 	color: #0f0;
 }
 
-.subsection-header {
+.subsection-header, .diagram-label {
 	display: block;
 	margin: 0;
 	margin-bottom: 5px;
@@ -131,6 +131,17 @@ a:link, a:hover, a:visited, a:active {
 	width: 140px;
 	height: 80px;
 	top: 7.5px;
+}
+
+.diagram-label {
+	text-align: center;
+}
+
+.diagram-img {
+	max-width: 100%;
+	display: block;
+	margin: 10px auto;
+	border: 1px solid #aaa;
 }
 
 
