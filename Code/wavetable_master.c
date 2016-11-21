@@ -456,17 +456,17 @@ static PT_THREAD (protothread_tft(struct pt *pt)) {
             old_onoff = -1;
         } 
         
-        // Correct random dots that appear on screen every 10 seconds
-        correct_time++;
-        if (correct_time >= 100) {
-            // Rectangle over tempo readout
-            tft_fillRect(0, 55, 106, 25, ILI9340_BLACK);
-            // Rectangle over note readout
-            tft_fillRect(108, 55, 105, 25, ILI9340_BLACK);
-            // Rectangle over table readout
-            tft_fillRect(215, 55, 105, 25, ILI9340_BLACK);
-            correct_time = 0;
-        }
+//        // Correct random dots that appear on screen every 10 seconds
+//        correct_time++;
+//        if (correct_time >= 100) {
+//            // Rectangle over tempo readout
+//            tft_fillRect(0, 55, 106, 25, ILI9340_BLACK);
+//            // Rectangle over note readout
+//            tft_fillRect(108, 55, 105, 25, ILI9340_BLACK);
+//            // Rectangle over table readout
+//            tft_fillRect(215, 55, 105, 25, ILI9340_BLACK);
+//            correct_time = 0;
+//        }
         
         PT_YIELD_TIME_msec(100);
     }
