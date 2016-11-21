@@ -214,23 +214,6 @@ void initTFT() {
 // Timer 3 interrupt handler
 volatile char to_reset = 0;
 volatile char update_flag = 0;
-void __ISR(_TIMER_3_VECTOR, IPL2AUTO) Timer3Handler(void)
-{
-    mT3ClearIntFlag();
-    // If we switched to a new step, adjust TFT seq readout to reflect that
-    if (old_step_select != step_select) {
-        tft_drawRect(1 + (old_step_select * 20), 115, 18, 100, 
-                (old_step_select == curr_step) ? ILI9340_RED : ILI9340_BLUE);
-        tft_drawRect(1 + (step_select * 20), 115, 18, 100, ILI9340_GREEN); 
-    }
-    if (update_flag) {
-        tft_drawRect(1 + (to_reset * 20), 115, 18, 100, 
-                (to_reset == step_select) ? ILI9340_GREEN : ILI9340_BLUE);
-        tft_drawRect(1 + (curr_step * 20), 115, 18, 100, ILI9340_RED);
-        update_flag = 0;
-    }
-}
-
 
 //== Timer 2 interrupt handler ===========================================
 volatile unsigned int DAC_data ;// output value
@@ -321,7 +304,7 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 // === thread structures ============================================
 // thread control structs
 // note that UART input and output are threads
-static struct pt pt_tft, pt_mux, pt_button, pt_dot_correct;
+static struct pt pt_tft, pt_mux, pt_button;
 
 char test_buffer[60];
 volatile int wait;
@@ -398,10 +381,19 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
     }
     PT_END(pt);
 }
-// system 1 second interval tick
-int sys_time_seconds ;
 
+// TFT update
 volatile char tab_number[2];
+volatile int correct_time = 0;
+
+// Flag for step updates
+volatile unsigned char correct_step_flag = 0;
+volatile unsigned char step_to_correct = 0;
+volatile int old_noteval = 0;
+volatile int old_onoff = 0;
+
+volatile int last_stepsel = 0;
+volatile int last_playstep = 0;
 static PT_THREAD (protothread_tft(struct pt *pt)) {
     PT_BEGIN(pt);
     while(1) {
@@ -422,6 +414,59 @@ static PT_THREAD (protothread_tft(struct pt *pt)) {
         tft_fillRect(146, 59, 40, 20, ILI9340_BLACK);
         tft_setTextColor(ILI9340_WHITE);
         tft_setCursor(147, 60); tft_writeString(note_names[note_select]);
+        
+        // Alternative step/play select update code
+        if (last_stepsel != step_select) {
+            tft_drawRect(1 + (last_stepsel * 20), 115, 18, 100, 
+                (last_stepsel == curr_step) ? ILI9340_RED : ILI9340_BLUE);
+            tft_drawRect(1 + (step_select * 20), 115, 18, 100, ILI9340_GREEN);
+            last_stepsel = step_select;
+        }
+        if (last_playstep != curr_step) {
+            tft_drawRect(1 + (last_playstep * 20), 115, 18, 100, 
+                (last_playstep == step_select) ? ILI9340_GREEN : ILI9340_BLUE);
+            tft_drawRect(1 + (curr_step * 20), 115, 18, 100, ILI9340_RED);
+            last_playstep = curr_step;
+        }
+        
+        // Update step parameters
+        if (correct_step_flag) {
+            // Do note correction if needed
+            if (old_noteval >= 0) {
+                // Erase old note
+                tft_fillRect(2 + (step_to_correct * 20), 
+                    212 - (old_noteval << 1), 16, 2, ILI9340_BLACK);
+                // Draw new note
+                tft_fillRect(2 + (step_to_correct * 20), 
+                    212 - (step_notes[step_to_correct] << 1), 16, 2, ILI9340_CYAN);
+            }
+            
+            // Do on/off correction if needed
+            if (old_onoff >= 0) {
+                // Draw rest/not_rest
+                tft_fillCircle(9 + (step_to_correct * 20), 227, 5, 
+                    (steps_on[step_to_correct]) ? ILI9340_CYAN : ILI9340_BLACK);
+                if (!steps_on[step_to_correct]) {
+                    tft_drawCircle(9 + (step_to_correct * 20), 227, 5, ILI9340_CYAN);
+                }
+            }
+            
+            correct_step_flag = 0;
+            old_noteval = -1;
+            old_onoff = -1;
+        } 
+        
+        // Correct random dots that appear on screen every 10 seconds
+        correct_time++;
+        if (correct_time >= 100) {
+            // Rectangle over tempo readout
+            tft_fillRect(0, 55, 106, 25, ILI9340_BLACK);
+            // Rectangle over note readout
+            tft_fillRect(108, 55, 105, 25, ILI9340_BLACK);
+            // Rectangle over table readout
+            tft_fillRect(215, 55, 105, 25, ILI9340_BLACK);
+            correct_time = 0;
+        }
         
         PT_YIELD_TIME_msec(100);
     }
@@ -457,44 +502,26 @@ static PT_THREAD (protothread_button(struct pt *pt)) {
         }
         // Toggle rests on the selected (green) note
         if ((rest_toggle ^ prev_rest_toggle) && rest_toggle) {
+            // Set redraw flags
+            correct_step_flag = 1;
+            step_to_correct = step_select;
+            old_onoff = steps_on[step_select];
+                    
+            // Toggle step value
             steps_on[step_select] ^= 1;
-            // Draw rest/not_rest
-            tft_fillCircle(9 + (step_select * 20), 227, 5, 
-                (steps_on[step_select]) ? ILI9340_CYAN : ILI9340_BLACK);
-            if (!steps_on[step_select]) {
-                tft_drawCircle(9 + (step_select * 20), 227, 5, ILI9340_CYAN);
-            }
         }
         // Save the current note to the sequence 
         if ((note_write ^ prev_note_write) && note_write) {
-            // Erase old note
-            tft_fillRect(2 + (step_select * 20), 
-                212 - (step_notes[step_select] << 1), 16, 2, ILI9340_BLACK);
+            // Set redraw flags
+            correct_step_flag = 1;
+            step_to_correct = step_select;
+            old_noteval = step_notes[step_select];
+            
             // Change note
             step_notes[step_select] = note_select;
-            // Draw new note
-            tft_fillRect(2 + (step_select * 20), 
-                212 - (step_notes[step_select] << 1), 16, 2, ILI9340_CYAN);
         }
         
-        PT_YIELD_TIME_msec(50);
-    }
-    PT_END(pt);
-}
-
-// Thread to periodically correct the random
-// dots that appear in the text display
-static PT_THREAD (protothread_dot_correct(struct pt *pt)) {
-    PT_BEGIN(pt);
-    while(1) {
-        // Rectangle over tempo readout
-        tft_fillRect(0, 55, 106, 25, ILI9340_BLACK);
-        // Rectangle over note readout
-        tft_fillRect(108, 55, 105, 25, ILI9340_BLACK);
-        // Rectangle over table readout
-        tft_fillRect(215, 55, 105, 25, ILI9340_BLACK);
-        
-        PT_YIELD_TIME_msec(10000); // Every 10 seconds
+        PT_YIELD_TIME_msec(100);
     }
     PT_END(pt);
 }
@@ -515,7 +542,6 @@ void main(void) {
     PT_INIT(&pt_tft);
     PT_INIT(&pt_mux);
     PT_INIT(&pt_button);
-    PT_INIT(&pt_dot_correct);
 
     initADC();
     
@@ -537,9 +563,9 @@ void main(void) {
 
     // Turn on Timer3 for the note_select TFT update
     // period of 10550 and prescalar of 64 has frequency of 14.9998 Hz 
-    OpenTimer3(T3_ON | T3_SOURCE_INT | T3_PS_1_32, 41667);
-    ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_2);
-    mT3ClearIntFlag(); // and clear the interrupt flag
+    // OpenTimer3(T3_ON | T3_SOURCE_INT | T3_PS_1_32, 41667);
+    // ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_2);
+    // mT3ClearIntFlag(); // and clear the interrupt flag
 
     initDAC();
     
@@ -555,7 +581,6 @@ void main(void) {
         PT_SCHEDULE(protothread_tft(&pt_tft));
         PT_SCHEDULE(protothread_mux(&pt_mux));
         PT_SCHEDULE(protothread_button(&pt_button));
-        PT_SCHEDULE(protothread_dot_correct(&pt_dot_correct));
     }
 } // main
 
