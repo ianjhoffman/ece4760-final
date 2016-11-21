@@ -394,9 +394,15 @@ volatile int old_onoff = 0;
 
 volatile int last_stepsel = 0;
 volatile int last_playstep = 0;
+volatile int curr_stepsel = 0;
+volatile int curr_playstep = 0;
 static PT_THREAD (protothread_tft(struct pt *pt)) {
     PT_BEGIN(pt);
     while(1) {
+        // Get current step/play to stabilize drawing between frames
+        curr_stepsel = step_select;
+        curr_playstep = curr_step;
+        
         // Write BPM to screen
         tft_fillRect(9, 59, 85, 20, ILI9340_BLACK);
         sprintf(test_buffer, "%d BPM", tempo_vals[tempo_index]);
@@ -416,17 +422,17 @@ static PT_THREAD (protothread_tft(struct pt *pt)) {
         tft_setCursor(147, 60); tft_writeString(note_names[note_select]);
         
         // Alternative step/play select update code
-        if (last_stepsel != step_select) {
+        if (last_stepsel != curr_stepsel) {
             tft_drawRect(1 + (last_stepsel * 20), 115, 18, 100, 
-                (last_stepsel == curr_step) ? ILI9340_RED : ILI9340_BLUE);
-            tft_drawRect(1 + (step_select * 20), 115, 18, 100, ILI9340_GREEN);
-            last_stepsel = step_select;
+                (last_stepsel == curr_playstep) ? ILI9340_RED : ILI9340_BLUE);
+            tft_drawRect(1 + (curr_stepsel * 20), 115, 18, 100, ILI9340_GREEN);
+            last_stepsel = curr_stepsel;
         }
-        if (last_playstep != curr_step) {
+        if (last_playstep != curr_playstep) {
             tft_drawRect(1 + (last_playstep * 20), 115, 18, 100, 
-                (last_playstep == step_select) ? ILI9340_GREEN : ILI9340_BLUE);
-            tft_drawRect(1 + (curr_step * 20), 115, 18, 100, ILI9340_RED);
-            last_playstep = curr_step;
+                (last_playstep == curr_stepsel) ? ILI9340_GREEN : ILI9340_BLUE);
+            tft_drawRect(1 + (curr_playstep * 20), 115, 18, 100, ILI9340_RED);
+            last_playstep = curr_playstep;
         }
         
         // Update step parameters
@@ -468,7 +474,7 @@ static PT_THREAD (protothread_tft(struct pt *pt)) {
 //            correct_time = 0;
 //        }
         
-        PT_YIELD_TIME_msec(100);
+        PT_YIELD_TIME_msec(50);
     }
     PT_END(pt);
 }
