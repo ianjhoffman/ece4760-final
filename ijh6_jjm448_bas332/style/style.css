@@ -5,9 +5,13 @@ body {
 	font-family: 'Roboto', sans-serif;
 }
 
-h1, h2 {
+h1, h2, h3 {
 	font-family: 'Lato', sans-serif;
 	font-style: bold;
+}
+
+ul {
+	margin: 0;
 }
 
 a:link, a:hover, a:visited, a:active {
@@ -62,15 +66,7 @@ a:link, a:hover, a:visited, a:active {
 #table-of-contents li a {
 	display: block;
 	line-height: 40px;
-/*	text-shadow: 0px 2px 5px rgba(0, 0, 0, 0)
-
-	transition: text-shadow .3s;
-	-webkit-transition: text-shadow .3s;*/
 }
-
-/*#table-of-contents li a:hover {
-	text-shadow: 0px 2px 5px rgba(0, 0, 0, .5)
-}*/
 
 .report-section {
 	padding: 16px;
@@ -110,4 +106,21 @@ a:link, a:hover, a:visited, a:active {
 .top-link:hover {
 	background-color: #aaa;
 }
+
+#references li a, #code-links li a {
+	color: #0f0;
+}
+
+.subsection-header {
+	display: block;
+	margin: 0;
+	margin-bottom: 5px;
+}
+
+.subsection-content {
+	display: block;
+	width: 90%;
+    margin: 0 auto;
+}
+
 
