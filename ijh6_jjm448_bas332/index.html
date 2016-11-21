@@ -174,26 +174,6 @@
 		<h3 class="subsection-header"> Roadblocks </h3>
 		<div class="subsection-content">
 			roadblocks (things that didn't work and how we fixed them) text...
-<!-- 			Mux issue with signals
-				Problem: mux stops functioning randomly
-					some pins affect other pins (pins one and six)
-					pushing wires seemed to affect the output (specifically tempo and blend values)
-				Unable to continue coding due to non-functioning Mux
-				Possible causes:
-					noise fluctuations in voltage lines affects all other signals
-					signal cross talk between channel select signals & input pin signals
-					excessively fast switching between mux signals (mux couldn't handle it, pic pins wouldn't settle in time)
-					bleeding within the mux internally
-				Methods of addressing the problem:    
-					moving wires away from TFT region (eventual motivation for building on a perfboard
-					adding capacitors between power and ground to stabilize voltage fluctuations
-					rerouting wires around the mux to maximize distance between different types of signals
-					adding in (eventually) a microsecond of delay when switching mux readings
-					grounding of signal six, which was fucking with everything 
-				Eventual results
-					This largely took care of the issues we were seeing
-					Can't say which one of these problems it was for sure 
-				-->
 		</div>
 
 		<!-- LINK TO TOP OF PAGE -->
@@ -221,15 +201,6 @@
 		</div>
 		<br>
 
-		<h3 class="subsection-header"> Ethical Considerations </h3>
-		<div class="subsection-content">
-			200 words or more, in reference to
-			<a href="http://www.ieee.org/web/membership/ethics/code_ethics.html" class="external">
-				IEEE code of ethics
-			</a>
-		</div>
-		<br>
-
 		<h3 class="subsection-header"> Safety </h3>
 		<div class="subsection-content">
 			safety considerations here
@@ -239,8 +210,6 @@
 		<h3 class="subsection-header"> Usability </h3>
 		<div class="subsection-content">
 			usability considerations here
-			<!-- Talk about the board itself, functional but not that aesthetically pleaseing
-				Perhaps next time we would design a box or something for it, so we'd only see the pots, buttons, display -->
 		</div>
 
 		<!-- LINK TO TOP OF PAGE -->
@@ -271,7 +240,9 @@
 		<h3 class="subsection-header"> Ethical Considerations </h3>
 		<div class="subsection-content">
 			200 words or more, in reference to
-			<a href="http://www.ieee.org/web/membership/ethics/code_ethics.html"></a>
+			<a href="http://www.ieee.org/web/membership/ethics/code_ethics.html" class="external">
+				IEEE code of ethics
+			</a>
 		</div>
 		<br>
 
