@@ -109,7 +109,7 @@ a:link, a:hover, a:visited, a:active {
 	background-color: #aaa;
 }
 
-#references li a, #code-links li a {
+#references li a, #code-links li a, a.external {
 	color: #0f0;
 }
 
