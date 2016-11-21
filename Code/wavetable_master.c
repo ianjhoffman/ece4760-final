@@ -419,9 +419,9 @@ static PT_THREAD (protothread_tft(struct pt *pt)) {
         tft_setCursor(263, 60); tft_writeString(tab_number);
         
         // Write current selected note to screen
-        tft_fillRect(120, 59, 85, 20, ILI9340_BLACK);
+        tft_fillRect(146, 59, 40, 20, ILI9340_BLACK);
         tft_setTextColor(ILI9340_WHITE);
-        tft_setCursor(121, 60); tft_writeString(note_names[note_select]);
+        tft_setCursor(147, 60); tft_writeString(note_names[note_select]);
         
         PT_YIELD_TIME_msec(100);
     }
