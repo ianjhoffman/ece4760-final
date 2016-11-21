@@ -36,43 +36,47 @@ a:link, a:hover, a:visited, a:active {
 	padding: 0;
 	display: block;
 	margin: 0 auto;
-	border: 1px solid #333;
-	overflow: hidden;
-	border-radius: 10px;
-	box-shadow: 0px 3px #333;
+	border: 1px solid #ccc;
+	box-shadow: 0px 0px 10px rgba(0, 0, 0, .25);
 }
 
 #table-of-contents li {
 	width: 300px;
 	text-align: center;
-	background-color: #ddd;
-	border-bottom: 1px solid #555;
+	border-bottom: 1px solid #ccc;
+	height: 40px;
 
-	transition: background-color .3s;
-	-webkit-transition: background-color .3s;
+	transition: font-size .3s, background-color .3s;
+	-webkit-transition: font-size .3s, background-color .3s;
+}
+
+#table-of-contents li.list-last {
+	border-bottom: none;
 }
 
 #table-of-contents li:hover {
-	background-color: #999;
+	font-size: 1.2em;
+	background-color: #eee;
 }
 
 #table-of-contents li a {
 	display: block;
-	padding: 10px;
+	line-height: 40px;
+/*	text-shadow: 0px 2px 5px rgba(0, 0, 0, 0)
 
-	transition: color .3s;
-	-webkit-transition: color .3s;
+	transition: text-shadow .3s;
+	-webkit-transition: text-shadow .3s;*/
 }
 
-#table-of-contents li a:hover {
-	color: #eee;
-}
+/*#table-of-contents li a:hover {
+	text-shadow: 0px 2px 5px rgba(0, 0, 0, .5)
+}*/
 
 .report-section {
-	padding: 10px;
+	padding: 16px;
     border: 1px solid #ccc;
     margin: 20px;
-    margin-bottom: 30px;
+    margin-bottom: 40px;
     margin-top: 10px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, .25);
 }
