@@ -321,7 +321,7 @@ void __ISR(_TIMER_2_VECTOR, IPL2AUTO) Timer2Handler(void)
 // === thread structures ============================================
 // thread control structs
 // note that UART input and output are threads
-static struct pt pt_tft, pt_mux, pt_button;
+static struct pt pt_tft, pt_mux, pt_button, pt_dot_correct;
 
 char test_buffer[60];
 volatile int wait;
@@ -482,6 +482,23 @@ static PT_THREAD (protothread_button(struct pt *pt)) {
     PT_END(pt);
 }
 
+// Thread to periodically correct the random
+// dots that appear in the text display
+static PT_THREAD (protothread_dot_correct(struct pt *pt)) {
+    PT_BEGIN(pt);
+    while(1) {
+        // Rectangle over tempo readout
+        tft_fillRect(0, 55, 106, 25, ILI9340_BLACK);
+        // Rectangle over note readout
+        tft_fillRect(108, 55, 105, 25, ILI9340_BLACK);
+        // Rectangle over table readout
+        tft_fillRect(215, 55, 105, 25, ILI9340_BLACK);
+        
+        PT_YIELD_TIME_msec(10000); // Every 10 seconds
+    }
+    PT_END(pt);
+}
+
 // === Main  ======================================================
 void main(void) {
     SYSTEMConfigPerformance(PBCLK);
@@ -498,6 +515,7 @@ void main(void) {
     PT_INIT(&pt_tft);
     PT_INIT(&pt_mux);
     PT_INIT(&pt_button);
+    PT_INIT(&pt_dot_correct);
 
     initADC();
     
@@ -537,6 +555,7 @@ void main(void) {
         PT_SCHEDULE(protothread_tft(&pt_tft));
         PT_SCHEDULE(protothread_mux(&pt_mux));
         PT_SCHEDULE(protothread_button(&pt_button));
+        PT_SCHEDULE(protothread_dot_correct(&pt_dot_correct));
     }
 } // main
 
