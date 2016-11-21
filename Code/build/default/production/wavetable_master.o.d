@@ -13,4 +13,5 @@ SawFilter.h  \
 VariedDigital.h  \
 freq_to_accum.h  \
  tempo_to_accum.h  \
-env_keyframes.h 
+env_keyframes.h  \
+note_names.h 

@@ -15,6 +15,7 @@
       <itemPath>SawFilter.h</itemPath>
       <itemPath>VariedDigital.h</itemPath>
       <itemPath>env_keyframes.h</itemPath>
+      <itemPath>note_names.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"

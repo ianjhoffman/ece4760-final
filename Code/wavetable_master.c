@@ -30,6 +30,9 @@
 // Include envelope phase accumulator table
 #include "env_keyframes.h"
 
+// Include names of notes
+#include "note_names.h"
+
 // Sequencer values
 volatile char step_notes[16] = {12, 0, 24, 0,
                                 36, 0, 24, 0,
@@ -175,8 +178,7 @@ void initADC() {
 // TFT constants
 char tempo_label[] = "TEMPO";
 char table_label[] = "TABLE";
-char stepsel_label[] = "Step select:";
-char notesel_label[] = "Note select:";
+char notesel_label[] = "NOTE";
 
 void initTFT() {
     int i;
@@ -191,10 +193,7 @@ void initTFT() {
     tft_drawLine(0, 105, 320, 105, ILI9340_WHITE); // horizontal above seq
     tft_drawLine(107, 0, 107, 105, ILI9340_WHITE); // vertical separator 1
     tft_drawLine(214, 0, 214, 105, ILI9340_WHITE); // vertical separator 2
-    tft_drawLine(0, 40, 107, 40, ILI9340_WHITE); // horizontal under text 1
-    tft_drawLine(214, 40, 320, 40, ILI9340_WHITE); // horizontal under text 2
-    tft_drawLine(107, 53, 214, 53, ILI9340_WHITE); // horizontal middle segment
-    
+    tft_drawLine(0, 40, 320, 40, ILI9340_WHITE); // horizontal under text
     
     // Draw active sequence
     for (i = 0; i < 16; i++) {
@@ -202,11 +201,12 @@ void initTFT() {
         if (steps_on[i]) tft_fillCircle(9 + (i * 20), 227, 5, ILI9340_CYAN);
     }
     
-    // Draw tempo/table labels
+    // Draw tempo/table/note select labels
     tft_setTextColor(ILI9340_WHITE);
     tft_setTextSize(3);
     tft_setCursor(7, 10); tft_writeString(tempo_label);
     tft_setCursor(220, 10); tft_writeString(table_label);
+    tft_setCursor(125, 10); tft_writeString(notesel_label);
     
     // WE'RE GONNA WANT TO DRAW STEP SELECT/NOTE SELECT ON TOP OF SCREEN
 }
@@ -416,7 +416,12 @@ static PT_THREAD (protothread_tft(struct pt *pt)) {
         tft_fillRect(255, 59, 30, 20, ILI9340_BLACK);
         sprintf(tab_number, "%d", table_index + 1);
         tft_setTextColor(ILI9340_WHITE);
-        tft_setCursor(256, 60); tft_writeString(tab_number);
+        tft_setCursor(263, 60); tft_writeString(tab_number);
+        
+        // Write current selected note to screen
+        tft_fillRect(120, 59, 85, 20, ILI9340_BLACK);
+        tft_setTextColor(ILI9340_WHITE);
+        tft_setCursor(121, 60); tft_writeString(note_names[note_select]);
         
         PT_YIELD_TIME_msec(100);
     }
