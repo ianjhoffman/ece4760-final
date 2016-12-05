@@ -34,15 +34,15 @@
 #include "note_names.h"
 
 // Sequencer values
-volatile char step_notes[16] = {12, 0, 24, 0,
-                                36, 0, 24, 0,
-                                12, 0, 19, 0,
-                                0, 17, 19, 20};
+volatile char step_notes[16] = {12, 0, 23, 12,
+                                24, 24, 23, 12,
+                                0, 0, 23, 12,
+                                0, 0, 0, 11};
 
-volatile char steps_on[16] = {1, 0, 1, 0,
-                              1, 0, 1, 0,
-                              1, 0, 1, 0,
-                              0, 1, 1, 1};
+volatile char steps_on[16] = {1, 0, 1, 1,
+                              1, 0, 1, 1,
+                              0, 0, 1, 1,
+                              0, 0, 0, 1};
 
 volatile unsigned char old_step_select = 0;
 volatile unsigned char step_select = 0;
@@ -359,7 +359,7 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
         // we skip pin six completely
         
         // Channel 6 (0b110) : shape envelope
-        PORTSetBits(IOPORT_B, BIT_8);
+        PORTSetBits(IOPORT_B, BIT_7); // was bit 8
         wait = 0; while(wait < 40) wait++;
         AcquireADC10();
         wait = 0; while(wait < 20) wait++;
@@ -367,11 +367,11 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
         // Set shape rise and fall accumulators
         shp_rise_acc = ENV_BLEND((atk_incs[shape_env >> 7]), 
                 (atk_incs[(shape_env >> 7) + 1]), (shape_env & 0xf));
-        shp_fall_acc = ENV_BLEND((atk_incs[shape_env >> 7]), 
+        shp_fall_acc = ENV_BLEND((decay_incs[shape_env >> 7]), 
                 (decay_incs[(shape_env >> 7) + 1]), (shape_env & 0xf));
         
         // Channel 7 (0b111) : shape amount
-        PORTSetBits(IOPORT_B, BIT_7);
+        PORTSetBits(IOPORT_B, BIT_8); // was bit 7
         wait = 0; while(wait < 40) wait++;
         AcquireADC10();
         wait = 0; while(wait < 20) wait++;
