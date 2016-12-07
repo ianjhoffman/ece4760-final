@@ -117,7 +117,17 @@
 	<div class="report-section">
 		<h3 class="subsection-header"> Rationale </h3>
 		<div class="subsection-content">
-			rationale text...
+
+			The motivation behind this final project was to design and build a cheap and 
+			easy-to-use sequenced wavetable synthesizer, primarily useful for basslines. 
+			It was mainly inspired by classic digital/digitally-assisted synthesizers like 
+			the PPG Wave, Waldorf Microwave, and Roland TB303. However, we wanted to make 
+			a wavetable synthesizer with simple, user-friendly controls, while still allowing 
+			the user to produce a wide range of sounds at a high audio quality. Wavetable 
+			synthesis, which is the method of repeating (and sometimes fading between) waveforms
+			in tables in memory, is a very easy way to produce many timbres in software 
+			inexpensively, so it was an obvious choice for our synthesis engine.
+
 		</div>
 		<br>
 
@@ -129,7 +139,40 @@
 
 		<h3 class="subsection-header"> Hardware/Software Tradeoffs </h3>
 		<div class="subsection-content">
-			hardware/software tradeoffs text...
+
+			The main hardware/software tradeoffs we dealt with revolved around amplitude 
+			control and the associated amplitude envelope generation for our synthesizer 
+			voice. Our amplitude control was implemented in software, using the DDS ISR 
+			and some shift operations/multiplication to scale the output sample by the 
+			amplitude envelope. This envelope was also generated in the ISR, with parameters 
+			calculated from values read in our knob value reading thread. 
+
+			<br><br>
+
+			Generating the amplitude envelope using a hardware envelope generator circuit 
+			would have been more expensive and increased circuit complexity, but users would 
+			be able to have more control over the envelope shape. We had to compromise on 
+			envelope shape control for simplicity of user experience, as well as limited 
+			ADC capabilities. To scale the amplitude of the output audio in hardware, we 
+			would need to construct a VCA (voltage-controlled amplifier) circuit, using 
+			transistors, and OTA, or a dedicated VCA integrated circuit. This would have 
+			also added to costs and circuit complexity.
+
+			<br><br>
+
+			A small extra step would also need to be taken to allow for hardware generation 
+			of the amplitude envelope - since it would no longer be triggered in the ISR, 
+			it would not have access to the knowledge of when a step change in the sequence 
+			occurred. So, another digital output pin would have to be configured, and in the 
+			ISR a trigger would have to be sent out on this digital pin to trigger the 
+			amplitude envelope on active steps.
+
+			<br><br>
+
+			We were able to fit the amplitude scaling and envelope generation into the DDS 
+			ISR in software, reducing the customization of envelope shaping, but also greatly 
+			reducing the cost and circuit complexity of the final product.
+
 		</div>
 		<br>
 
