@@ -152,7 +152,59 @@
 
 		<h3 class="subsection-header"> Logical Structure </h3>
 		<div class="subsection-content">
-			logical structure text...
+			
+			Our first step in approaching this design was to set up a DDS ISR and 
+			configure the DAC using methods similar to those used in the DMTF section 
+			of Lab 2. At this point, we wanted to make sure that we could fade between 
+			two different waveforms. Since we had no user input at this point, we 
+			instead created an LFO (low frequency oscillator) alongside the main 
+			oscillator, to use as a modulation source. After generating two tables, 
+			one with a triangle wave and the other with a sawtooth wave, we created 
+			a macro that took a blend index and output a blended sample. By indexing 
+			into both tables with our phase accumulator, then feeding the two retrieved 
+			samples into this macro along with the LFO’s value, we were able to achieve 
+			smooth crossfading between two waveforms. 
+
+
+			<br><br>
+
+			<!-- INTIAL TRIANGLE TO SAWTOOTH MORPHING -->
+			<h3 class="diagram-label"> Initial Triangle to Sawtooth Blend, Midway </h3>
+			<img src="images/tri_saw_morphing.png" alt="triangle to sawtooth" class="diagram-img">
+
+			<br>
+
+			After this initial success, we wanted to be able to blend through a whole 
+			wave table manually. After having created a C header file with all the samples 
+			needed for a simple wavetable, we added some bitwise logic to separate our 
+			crossfading signal into two parts: one part to index into subtables (individual 
+			waveforms), and another part to represent the fade index between the two subtables. 
+			Finally, we set up the ADC and connected it to one of our potentiometers, in a 
+			way similar to the paddle control potentiometer in Lab 3. Reading the ADC’s value 
+			in the DDS ISR, we were able to get very responsive fading across an entire wavetable.
+
+			<br><br>
+
+			Our next step was to add our sequencer. This was a pretty straightforward 
+			implementation, using another phase accumulator to represent the sequence 
+			position, which was updated in the DDS ISR depending on whether or not the 
+			sequence was playing. Alongside this development, we created the user interface 
+			needed to represent the sequence, so that the sequence’s status could be viewed 
+			on the TFT display.
+
+			<br><br>
+
+			Once we had the sequencer working, we added all the controls we needed, which 
+			were read through a multiplexer into the single on-board ADC on the PIC32. We 
+			managed to correctly implement this part of the project after much troubleshooting. 
+			We used the values we read in from the multiplexer to control sequencer speed (tempo), 
+			sequencer editing parameters, wave blending, and, envelopes. While initially, TFT 
+			updates happened in the DDS ISR to keep them synchronous with updates in the sequence, 
+			this became impractical, so they were moved to a dedicated thread. Button presses, 
+			and multiplexer input reading were also each given their own threads respectively. 
+			After a bit more work with reducing the complexity of envelopes, using a method which 
+			crossfaded between different envelope ‘keyframes’, we had a working program.
+
 		</div>
 		<br>
 
@@ -766,7 +818,12 @@
 		<h3 class="subsection-header"> Intellectual Property Considerations </h3>
 		<div class="subsection-content">
 
-			intellectual property considerations text...
+			We used a general synthesis concept, wavetable synthesis, that many digital 
+			synth designers have taken advantage of over the past few decades,  which is 
+			also somewhat of an expansion from the simple tenets of DDS we learned in 
+			lecture. Since the only code we reused was code provided by the course staff, 
+			and did not reverse engineer a design but instead implemented a publicly 
+			available concept, we did not run into any intellectual property issues.
 
 		</div>
 		<br>
