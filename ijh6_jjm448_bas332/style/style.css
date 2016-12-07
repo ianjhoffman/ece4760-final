@@ -116,6 +116,10 @@ a:link, a:hover, a:visited, a:active {
 .subsection-header, .diagram-label {
 	display: block;
 	margin: 0;
+	margin-bottom: 15px;
+}
+
+.diagram-label {
 	margin-bottom: 5px;
 }
 
@@ -135,6 +139,13 @@ a:link, a:hover, a:visited, a:active {
 
 .diagram-label {
 	text-align: center;
+}
+
+.subsubsection-header {
+	text-align: center;
+	padding-bottom: 5px;
+	margin-top: 10px;
+	border-bottom: 1px solid #777;
 }
 
 .diagram-img {

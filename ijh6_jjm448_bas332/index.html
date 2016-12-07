@@ -151,15 +151,78 @@
 	<div class="report-section">
 		<h3 class="subsection-header"> Software Details </h3>
 		<div class="subsection-content">
-			In our software, the sequencer is initialized in its paused state, with a preset 
-			array of sixteen note/rest values. The user can then select individual notes and 
-			edit them, either changing the note value or turning it on and off. The sequence 
-			can be altered in both the play and pause modes. The wave-forms, blending coefficient 
-			between waves, tempo, volume, and envelopes can be changed, and apply to all 16 notes. 
-			When put together, we have a very customizable timbre, and 16-step sequence. 
+
+			<h4 class="subsubsection-header"> Synthesis/Sequencer Parameters </h4>
+
+			In our software, there are dozens of variables that refer to different synthesis
+			parameters. Two char arrays, step_notes and steps_on, represent the note and
+			activity (rest or note) of each step in the 16-step sequence. In step_notes, a
+			note is represented by an index, 0-48, into a table of phase accumulators, 
+			calculated using freq_accum_calcs.rb, which can be found in the 
+			<a class="external" href="#commented-program">Commented Program Files</a> section.
+
+			<br><br>
+
+			The old_step_select, step_select, note_select, old_step, and curr_step variables
+			are used for sequence editing and playback, both to supply the TFT-update thread
+			with information it needs to draw the sequence state, and to facilitate reading
+			and writing data to/from the two sequence arrays mentioned above. The seq_active
+			variable is used in the DDS ISR to determine whether or not to add the sequence
+			advancing phase accumulator to the step_accum counter. The phase accumulators for
+			each tempo were calculated using tempo_accum_calcs.rb, which can be found in the
+			Commented Program Files section.
+
+			<br><br>
+
+			There are many flags, accumulators, and values that go into making the amplitude
+			and shape blend envelopes work. The amp_env, shape_env, and shape_amt variables
+			hold the values for the modal envelopes, and the attenuation amount for the shape
+			envelope respectively, all set directly from the ADC reading thread. The rising
+			variables are used as flags in the DDS ISR to determine whether to add or subtract
+			the accumulator. The rise_acc and fall_acc variables for both envelopes are set 
+			using envelope rise/fall phase accumulators calculated in env_bound_accum_calcs.rb, 
+			which can be found in the Commented Program Files section. These accumulators are 
+			blended across the turn of the modal envelope knobs, allowing fades through 
+			different envelope lengths and shapes.
+
+			<br><br> 
+
+			Both envelopes are AD envelopes. At the left side of the knob, the envelope has
+			a short attack and long decay. As the knob moves towards the center of its turn, 
+			the decay becomes longer until a certain keyframe, at which point the attack
+			starts lengthening, making the envelope's shape more triangular. After this 
+			keyframe, the attack continues to become longer as the decay shortens, eventually
+			resulting in shapes inverse to those on the left side of the knob, in which the
+			attack is long but the decay is very short. The specific time values of each
+			envelope keyframe are listed in comments in env_bound_accum_calcs.rb.
+
+			<br><br>
+			<h4 class="subsubsection-header"> DDS ISR </h4> 
+
+			Our DDS ISR (Direct Digital Synthesis Interrupt Service Routine) accomplishes
+			all the tasks it needs to very expediently. This is necessary because of the speed
+			at which it is run: 100kHz. In these 400 cycles, with cycles to spare for other
+			threads like the button or TFT threads, 
+
+			<br><br>
+			<h4 class="subsubsection-header"> TFT/User Interface </h4> 
 
 
-			IAN ADD STUFF ABOUT PROGRAM/HELPER PROGRAMS
+			<br><br>
+			<h4 class="subsubsection-header"> Multiplexing Input </h4>
+
+
+			<br><br>
+			<h4 class="subsubsection-header"> Button Processing </h4>
+
+
+			<br><br>
+			<h4 class="subsubsection-header"> Creating Wavetables </h4>
+
+
+			<br><br>
+			<h4 class="subsubsection-header"> Use of unsigned ints instead of fix16 </h4>
+
 		</div>
 		<br>
 
@@ -203,8 +266,8 @@
 			 <br><br>
 
 			The DAC is responsible for the main deliverable portion of our project, 
-			and so it’s function is quite visible. However, the other main bit of 
-			hardware in our setup is the CD4051b multiplexer, which takes input 
+			so its function is quite visible. However, the other main bit of 
+			hardware in our setup is the CD4051B multiplexer, which takes input 
 			signals from all of our potentiometers and relieves pressure on the PIC32’s 
 			ADC capabilities. Most of the ADC pins on the PIC32 are taken up by the 
 			TFT display, and so only four pins exist for our 7 analog inputs. 
@@ -215,16 +278,16 @@
 
 			<br><br>
 
-			Under the hood, there exists only one ADC in the microcontroller, so it would be multiplexing 
-			between all of the ADC pins, in addition to the multiplexing we would be 
-			doing on each pin.The CD4051b then perfectly addresses our issue, due to 
-			it having eight inputs, outputting a single line which would then use only 
-			one ADC pin on the PIC32. Thanks to the multiplexer, we can keep the existing ADC 
-			configuration. Although the multiplexer requires three extra channel inputs, 
-			which are controlled by the PIC32, we have plenty more options for it, seeing 
-			as they can be Digital Outputs, rather than Analog Inputs. The multiplexer itself 
-			takes Vdd from the PIC32 power rail, and uses all the signal pins except 
-			for Signal 5, which is grounded. The Vss, Vee, and INH pins are also sent 
+			Under the hood, there exists only one ADC in the microcontroller, so it 
+			would be multiplexing between all of the ADC pins, in addition to the 
+			multiplexing we would be doing on each pin. The CD4051B perfectly addresses 
+			this issue, due to it having eight inputs, outputting a single signal which 
+			we could read on the one ADC pin on the PIC32. Thanks to the multiplexer, 
+			we can keep the existing ADC configuration. Although the multiplexer requires 
+			three extra channel inputs, which are controlled by the PIC32, we have plenty 
+			more options with it, seeing as they can be digital outputs. The multiplexer 
+			takes Vdd from the PIC32 power rail, and uses all the signal input pins except 
+			for Signal 5, which we grounded. The Vss, Vee, and INH pins were also sent 
 			to ground. 
 
 			<br><br>
