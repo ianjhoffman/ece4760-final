@@ -249,12 +249,41 @@
 			<br><br>
 			<h4 class="subsubsection-header"> TFT/User Interface </h4> 
 
-
+			...
 
 			<br><br>
 			<h4 class="subsubsection-header"> Multiplexing Input </h4>
 
+			The multiplexing of input through the 1 on-board ADC was done in a dedicated
+			thread. In this thread, all 7 potentiometer values were read into their respective
+			variables, with any data manipulations needed done as well (such as converting
+			raw envelope positions into rise/fall accumulators). The 3 control bits for the
+			multiplexer had to be switched before each read, after which a couple short waits
+			(implemented using an empty while loop) was required before reading the ADC value.
+			Overall, the procedure for each of the 7 reads was largely identical and was as
+			follows:
 
+			<br><br>
+			<ul class="insection-list">
+				<li>
+					Set BIT_7, BIT_8, and BIT_9 on IOPORT_B to represent the index of the 
+					multiplexer input in binary, from 0-7
+				</li>
+				<li>
+					Wait for approximately 80 cycles
+				</li>
+				<li>
+					Acquire the ADC (would not have been needed if auto-capture were on)
+					using the AcquireADC10() function
+				</li>
+				<li>
+					Wait for approximately 40 more cycles
+				</li>
+				<li>
+					Set old value variables if needed, then read the new value using
+					ReadADC10(0) and process the read value quickly
+				</li>
+			</ul>
 
 			<br><br>
 			<h4 class="subsubsection-header"> Button Processing </h4>
@@ -502,7 +531,11 @@
 
 		<h3 class="subsection-header"> Safety </h3>
 		<div class="subsection-content">
-			safety considerations here
+			When using this synthesizer, there aren’t any major safety considerations to 
+			take into account. The greatest danger is from the user to the board itself, 
+			as ESD can render the board unusable. Incorrect placement of the microcontroller on 
+			the pins can also result in blowing out some of the PIC32’s pins. Of course, one must 
+			take care as to not prick their fingers due to the solder points on the back of the board.
 		</div>
 		<br>
 
