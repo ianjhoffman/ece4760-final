@@ -144,5 +144,10 @@ a:link, a:hover, a:visited, a:active {
 	border: 1px solid #aaa;
 }
 
-
+.video {
+	display: block;
+	margin: 20px auto;
+	width: 640px;
+	height: 360px;
+}
 

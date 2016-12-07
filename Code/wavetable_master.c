@@ -359,7 +359,7 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
         // we skip pin six completely
         
         // Channel 6 (0b110) : shape envelope
-        PORTSetBits(IOPORT_B, BIT_7); // was bit 8
+        PORTSetBits(IOPORT_B, BIT_8); // was bit 8
         wait = 0; while(wait < 40) wait++;
         AcquireADC10();
         wait = 0; while(wait < 20) wait++;
@@ -371,7 +371,7 @@ static PT_THREAD (protothread_mux(struct pt *pt)){
                 (decay_incs[(shape_env >> 7) + 1]), (shape_env & 0xf));
         
         // Channel 7 (0b111) : shape amount
-        PORTSetBits(IOPORT_B, BIT_8); // was bit 7
+        PORTSetBits(IOPORT_B, BIT_7); // was bit 7
         wait = 0; while(wait < 40) wait++;
         AcquireADC10();
         wait = 0; while(wait < 20) wait++;
@@ -418,6 +418,7 @@ static PT_THREAD (protothread_tft(struct pt *pt)) {
         
         // Write current selected note to screen
         tft_fillRect(146, 59, 40, 20, ILI9340_BLACK);
+        tft_setTextSize(2);
         tft_setTextColor(ILI9340_WHITE);
         tft_setCursor(147, 60); tft_writeString(note_names[note_select]);
         
@@ -474,7 +475,7 @@ static PT_THREAD (protothread_tft(struct pt *pt)) {
 //            correct_time = 0;
 //        }
         
-        PT_YIELD_TIME_msec(50);
+        PT_YIELD_TIME_msec(67);
     }
     PT_END(pt);
 }

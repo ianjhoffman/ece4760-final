@@ -149,7 +149,7 @@
 	<!-- HARDWARE/SOFTWARE DESIGN -->
 	<h2 class="section-header" id="hardware-software-design">Hardware/Software Design</h2>
 	<div class="report-section">
-		<h3 class="subsection-header"> Program Details </h3>
+		<h3 class="subsection-header"> Software Details </h3>
 		<div class="subsection-content">
 			program details text...
 		</div>
@@ -157,7 +157,75 @@
 
 		<h3 class="subsection-header"> Hardware Details </h3>
 		<div class="subsection-content">
-			hardware details text...
+			The hardware for the synthesizer is composed of a PIC32 microcontroller, 
+			7 potentiometers, 4 buttons, an 8:1 analog multiplexer, a 12-bit DAC, 
+			and a TFT display. Using user input from the various potentiometers and 
+			buttons, the PIC then generates different sequences and waveforms based 
+			upon the current inputs. 
+
+			<br><br>
+
+			A full hardware diagram can be found in the 
+			<a class="external" href="#schematics">Schematics</a> 
+			section.
+
+			<br><br>
+
+			Our TFT display is connected the way it has been for the previous labs, 
+			using pins 4, 5, 6, 22, and 25. 
+
+			<br><br>
+
+			<!-- CONTROL FUNCTION TABLE -->
+			<h3 class="diagram-label"> Button/Knob Control Functions </h3>
+			<img src="images/control_uses.png" alt="controls" class="diagram-img">
+
+			<!-- PIN CONNECTIONS TABLE -->
+			<h3 class="diagram-label"> Pin Connections </h3>
+			<img src="images/pin_connex.png" alt="connections" class="diagram-img">
+
+			<br>
+
+			The PIC32 then used direct digital synthesis running at 100 kHz to generate 
+			the correct waveform specified by the input settings. The generation of  
+			the waveform required the use of an external 12-bit DAC, the MCP4822.  
+			The DAC has two output pins, VoutA and VoutB, of which we only use VoutA.  
+			VoutB is sent to ground, along with Vss, and the LDAC pins. 
+
+			 <br><br>
+
+			The DAC is responsible for the main deliverable portion of our project, 
+			and so it’s function is quite visible. However, the other main bit of 
+			hardware in our setup is the CD4051b multiplexer, which takes input 
+			signals from all of our potentiometers and relieves pressure on the PIC32’s 
+			ADC capabilities. Most of the ADC pins on the PIC32 are taken up by the 
+			TFT display, and so only four pins exist for our 7 analog inputs. 
+			Clearly, even if we were to use all the ADC inputs, there would be a need 
+			for multiplexing, as there would be three knobs unconnected. If we were 
+			to use multiple ADC pins, then we would also have to re-configure the 
+			ADC setup in order to multiplex between all the ADC pins. 
+
+			<br><br>
+
+			Under the hood, there exists only one ADC in the microcontroller, so it would be multiplexing 
+			between all of the ADC pins, in addition to the multiplexing we would be 
+			doing on each pin.The CD4051b then perfectly addresses our issue, due to 
+			it having eight inputs, outputting a single line which would then use only 
+			one ADC pin on the PIC32. Thanks to the multiplexer, we can keep the existing ADC 
+			configuration. Although the multiplexer requires three extra channel inputs, 
+			which are controlled by the PIC32, we have plenty more options for it, seeing 
+			as they can be Digital Outputs, rather than Analog Inputs. The multiplexer itself 
+			takes Vdd from the PIC32 power rail, and uses all the signal pins except 
+			for Signal 5, which is grounded. The Vss, Vee, and INH pins are also sent 
+			to ground. 
+
+			<br><br>
+
+			In order to stabilize the voltage output by the PIC32, we placed various 10µF 
+			capacitors between power and ground on the hardware. This smoothes out 
+			spikes and drops in the 3.3V output of the microcontroller. 
+
+
 		</div>
 		<br>
 
@@ -183,6 +251,10 @@
 	<!-- RESULTS OF PROJECt -->
 	<h2 class="section-header" id="results">Results</h2>
 	<div class="report-section">
+
+		<iframe src="https://www.youtube.com/embed/-MwzoiNMvcI" class="video" frameborder="0" allowfullscreen>
+		</iframe><br>
+
 		<h3 class="subsection-header"> Wave Tables </h3>
 		<div class="subsection-content">
 			wave table images here
@@ -258,7 +330,7 @@
 	<!-- APPENDIX A -->
 	<h2 class="section-header" id="appendix-a">Appendix A</h2>
 	<div class="report-section">
-		The group approves this report for inclusion on the course website.
+		The group approves this report and the YouTube video for inclusion on the course website.
 
 		<!-- LINK TO TOP OF PAGE -->
 		<a href="#top" class="top-link">TOP</a>
