@@ -318,8 +318,9 @@
 			<h4 class="subsubsection-header"> Creating Wavetables </h4>
 
 			All of our wavetables were initially designed custom in the VST Plugin 
-			Serum, an advanced wavetable synthesizer with a built-in wavetable 
-			creation tool. After these wavetables were created, the .wav files
+			<a class="external" href="https://www.xferrecords.com/products/serum/">Serum</a>
+			by Xfer Records, an advanced wavetable synthesizer with a built-in 
+			wavetable creation tool. After these wavetables were created, the .wav files
 			that represented them were converted to 32-bit signed .raw files using
 			the free audio software, Audacity. The wavetables in Serum initially
 			were represented as 32-bit float, with 512 samples per table. Using 
@@ -384,6 +385,8 @@
 			<!-- CONTROL FUNCTION TABLE -->
 			<h3 class="diagram-label"> Button/Knob Control Functions </h3>
 			<img src="images/control_uses.png" alt="controls" class="diagram-img">
+
+			<br>
 
 			<!-- PIN CONNECTIONS TABLE -->
 			<h3 class="diagram-label"> Pin Connections </h3>
@@ -567,13 +570,120 @@
 	<div class="report-section">
 		<h3 class="subsection-header"> Conformity to Initial Specification </h3>
 		<div class="subsection-content">
-			how different was our end product from original plan? what changes did we make?
+
+			Although our design certainly deviated somewhat from the original plan, 
+			the larger direction that the final design took mirrored our original 
+			vision. Below, one can see the original and final designs of our project.
+
+			<br><br>
+
+			<h3 class="diagram-label"> Original Project Layout/Design </h3>
+			<img src="images/original-layout.png" alt="original layout" class="diagram-img">
+
+			<br>
+
+			<h3 class="diagram-label"> Final Project Layout/Design </h3>
+			<img src="images/final-layout.png" alt="final layout" class="diagram-img">
+
+			Some of the design changes between the intial and final designs were 
+			just logistic changes, such as the two perfboards in the final product rather 
+			than the initial projection of one large PCB behind a panel. The layout is 
+			a more messy in our final prototype, with the knobs and buttons unlabeled
+			and ungrouped. We also cut back on a few different controls, both for usability
+			and because of hardware limitations. The LFO and its intensity control was
+			removed entirely. The amplitude and shape envelopes were cut back from two
+			knobs each, for attack and decay, to one knob each, using a modal envelope
+			scheme. This change allowed for most common attack/decay parameter combinations,
+			but avoided a complicated control scheme and complicated ADC configuration.
+
+			<br><br>
+
+			Similarly to the knobs, the buttons were not grouped by function or labeled
+			in our final design. The linear/stepped interpolation button was entirely
+			removed from the final design, and a table toggle button took the place of
+			the table select knob. The LEDs alongside the buttons were not included in
+			the final project, as the information they provided was trivial/irrelevant
+			and could be derived from the TFT display. The TFT display's layout was
+			essentially identical to its original conception, although the LFO frequency
+			was replaced by the name of the current note to be written.
+
+			<br><br>
+
+			Most of the modifications we made were mostly due to lack of time and 
+			resources, and given more time, we would probably structure our project 
+			to visually resemble the original design. 
+
 		</div>
 		<br>
 
 		<h3 class="subsection-header"> Future Ideas </h3>
 		<div class="subsection-content">
-			things we would have liked to implement, had we had more time...
+			
+			During the implementation of our project, we started realizing that there were many 
+			possible expansions to this design. One of these is the length of are sequencer. 
+			Playing notes, or four measures, is not too difficult to implement, fits well on the 
+			TFT, and provides some flexibility in creating musical phrases. However, increasing 
+			this limitation from 16 to 32 would have unlocked countless new ideas; many video 
+			game and movie themes can be realized with 32 notes. In order to visualize this 
+			modification on the TFT, we could halve the width of each note's representation on
+			the screen, or create two pages of notes, each of which would retain the clarity of 
+			the original 16-note page. Of course, a second page would add much more complexity 
+			to our codebase, something we didn't want to introduce to the project's scope.
+
+			<br><br>
+
+			Although we could change each note's frequency individually, our wave blending 
+			controls applied to the overall 16-step sequence. If we could set table index 
+			and blend values for each step, our sequence would be much more dynamic. Enabling
+			this kind of customation would require an extra sequencer page, which could lead
+			to a much more complex control scheme and more complex code bookkeeping in our 
+			TFT thread and elsewhere. 
+ 			
+			<br><br>
+
+ 			If we were to implement these ideas, we would benefit from restructuring the layout 
+ 			of the TFT screen. Displaying all the new information on the current screen could 
+ 			get too cluttered. One way to handle all the new information we would need to display 
+ 			would be to have different screen templates which would be rendered depending on the
+ 			current 'mode' of the synthesizer. Some screen templates could be for viewing the
+ 			different sequencer segments, while others would be for viewing overall program
+ 			information such as envelope shapes, table index, and blend values. Another sequence 
+ 			programming feature we wanted to implement but didn't get around to was 
+ 			'phantom notes'. When programming steps in our current implementation, only the note
+ 			to be programmed is displayed. However, with 'phantom notes', a representation of
+ 			where the new note bar would be in the sequencer step readout would appear, adding a
+ 			more interactive element to note editing.
+			
+			<br><br>
+
+			Another feature we would have liked to add is presets. This is the ability to save
+			and later recall all parameters associated with a particular program, including its
+			sequence data, into flash memory, to be recalled later even between power cycles.
+			This would require another mode for the screen, as well as procedures to pack the
+			program data together and save/recall it. We would also need to change the way our 
+			knobs functioned, as any recalled data, with our current knob reading thread, would
+			be instantly overwritten with whatever values the knobs were at. We could use one 
+			of a couple different knob scaling schemes to make this work. One method would be
+			a one in which, after a saved preset is loaded, internal value do not change until 
+			their associated knob goes past the value stored internally. The other method would 
+			be a curved method in which disagreements between knob positions and internal values 
+			would be scaled on an exponential curve.
+
+			<br><br>
+
+			Aside from our software, one shortcoming of our project was its presentation. 
+			Having exposed perf boards, hardware components, and the PIC32 looks somewhat 
+			unprofessional, and also increases the possibility of the user breaking parts 
+			of the project. While damage was less of an issue with us, the designers, 
+			handling the hardware, if we were to create a more polished version of the synth, 
+			we would fashion some sort of box to contain the whole system, possibly out of 
+			laser cut acrylic or wood, with the user inputs easily accessible and labelled. 
+			All pots would be bolted to the faceplate for stability, and each pot shaft would 
+			have a real knob on it to allow for finer tuning of parameters. An on/off switch
+			would also exist on this box. This possible improved design would be much more 
+			professional and better looking as a product, and would reduce the chances of 
+			accidental damage to the circuitry. 
+
 		</div>
 		<br>
 
@@ -585,10 +695,34 @@
 
 		<h3 class="subsection-header"> Ethical Considerations </h3>
 		<div class="subsection-content">
-			200 words or more, in reference to
+
+			This section is written in reference to the
 			<a href="http://www.ieee.org/web/membership/ethics/code_ethics.html" class="external">
-				IEEE code of ethics
-			</a>
+				IEEE Code of Ethics
+			</a>.
+
+			<br><br>
+
+			The most important ethical issue that we faced in our project was the usage 
+			of the 3rd-party software to generate our wave tables. As mentioned earlier, 
+			the waveforms used in our synth sequencer were first generated using Xfer Records'
+			Serum. The other programs we used were open source, and therefore free to use. 
+			Using pirated software would be against the spirit of the IEEE Code of Ethics, 
+			as would selling our synth using their ‘technology’. Since Ian's license of Serum
+			had Xfer Records compensated and our project is not for profit, we avoid ethical 
+			violations. 
+
+			<br><br>
+
+			In addition to stealing technology, we also could have harmed our 
+			fellow students by plagiarizing their ideas. Audio-related projects are fairly 
+			common, and it wouldn’t have been difficult to rip off similar ideas of our peers 
+			and claim them as our own. Needless to say, this would also be a serious breach 
+			of the code of ethics. Thankfully, our interest in finding our own implementation 
+			rendered cheating completely unnecessary. Although we use boilerplate code from 
+			the ECE 4760 page, that code was freely provided to us for use in previous labs, 
+			so there exists no conflict of interest on that front. 
+
 		</div>
 		<br>
 
