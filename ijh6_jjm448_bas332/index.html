@@ -146,7 +146,25 @@
 
 		<h3 class="subsection-header"> Background Math </h3>
 		<div class="subsection-content">
-			background math text... (discuss phase accum calculation used in .rb files)
+
+			The main math used in this project was used over and over again to calculate 
+			phase accumulators for many aspects of the synthesis. Phase accumulators were 
+			needed for the C0-C4 note frequencies, for all the envelope keyframe speeds, 
+			and for the different tempos allowed by the sequencer. These were calculated 
+			by taking into account the overflow for our envelope/sequencer/oscillator phase 
+			accumulators, all of which were unsigned integers. The calculations also took 
+			into account the desired frequencies, and the frequency of the DDS ISR, which 
+			was run at 100kHz. A sample calculation of a phase accumulator for the note C1 
+			is done below, and all other calculations, as well as comments on them, can be 
+			found in the 3 Ruby scripts found in the <a class="external" 
+			href="#commented-program">Commented Program Files</a> section.
+
+			<br><br>
+
+			<!-- EXAMPLE PHASE ACCUMULATOR CALCULATION -->
+			<h3 class="diagram-label"> Calculating Phase Accumulator for the Note C1 </h3>
+			<img src="images/phase_accum_calc.png" alt="phase accumulator calculation" class="diagram-img">
+
 		</div>
 		<br>
 
