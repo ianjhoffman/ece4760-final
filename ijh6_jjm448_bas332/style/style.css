@@ -149,5 +149,6 @@ a:link, a:hover, a:visited, a:active {
 	margin: 20px auto;
 	width: 640px;
 	height: 360px;
+	border: 1px solid #aaa;
 }
 

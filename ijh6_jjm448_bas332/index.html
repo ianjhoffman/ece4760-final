@@ -151,7 +151,15 @@
 	<div class="report-section">
 		<h3 class="subsection-header"> Software Details </h3>
 		<div class="subsection-content">
-			program details text...
+			In our software, the sequencer is initialized in its paused state, with a preset 
+			array of sixteen note/rest values. The user can then select individual notes and 
+			edit them, either changing the note value or turning it on and off. The sequence 
+			can be altered in both the play and pause modes. The wave-forms, blending coefficient 
+			between waves, tempo, volume, and envelopes can be changed, and apply to all 16 notes. 
+			When put together, we have a very customizable timbre, and 16-step sequence. 
+
+
+			IAN ADD STUFF ABOUT PROGRAM/HELPER PROGRAMS
 		</div>
 		<br>
 
@@ -225,7 +233,6 @@
 			capacitors between power and ground on the hardware. This smoothes out 
 			spikes and drops in the 3.3V output of the microcontroller. 
 
-
 		</div>
 		<br>
 
@@ -241,7 +248,73 @@
 
 		<h3 class="subsection-header"> Roadblocks </h3>
 		<div class="subsection-content">
-			roadblocks (things that didn't work and how we fixed them) text...
+			The most vexing bottleneck in our project was getting the multiplexer to work 
+			properly. After wiring it up according to the data sheet, it would only function 
+			intermittently, working properly sometimes, and then being completely unresponsive 
+			at others. In addition to this, when the hardware did function, a few potentiometer 
+			inputs seemed to interact with others. Specifically, the first signal input would 
+			be altered slightly by every other knob, and the sixth knob would bleed into all 
+			other inputs. Since the multiplexer would work sporadically and unpredictably, it didn’t 
+			seem as if software was the issue, though it was possible. When touching and bending 
+			wires, we would occasionally be able to change the functionality of multiplexer, but 
+			these events would not affect the multiplexer consistently. 
+
+			<br><br>
+
+			One possible explanation for 
+			this behavior takes into account the electric fields our bodies generate. 
+			Depending on where we would poke wires and our own orientation, the multiplexer signal 
+			wires could have been affected. This issue could be exacerbated by the fact 
+			that we had channel select wires crossing over the analog outputs of the multiplexer, 
+			which were both in close proximity to our power rails. This served as part of 
+			the motivation to move our hardware setup to perfboard. To further address 
+			the signal-to-noise issue, we placed capacitors between power and ground, and moved 
+			wires away from the TFT display. In case of internally broken wires, we also 
+			replaced all the signal wires connecting to the multiplexer. In order to address the 
+			possible internal signal bleeding of the multiplexer, we grounded pin 5 of the multiplexer,
+			which equated to the 6th signal input, the multiplexer pins being 0-indexed.
+
+			<br><br>
+
+			After taking all the actions listed above, the multiplexer behaved more consistently, but 
+			we were unable to read from more than 2 different sources, beyond which we received
+			garbage data. This issue this time was a software issue; we weren’t waiting 
+			long enough between switching index bits to read the ADC pin. The PIC’s <i>DigitalRead</i>
+			settling time, internal ADC sampling speeds, and the multiplexer’s switching speed require 
+			dozens of processor cycles of waiting, so we put in a delay of approximately a microsecond 
+			before each read. The function for waiting 1µs included in the TFT library was not working
+			for some reason, so this wait was achieved using a for loop with no body.
+
+			<br><br>
+
+			Carrying out these fixes largely took care of all the issues we were seeing. Because we 
+			implemented most of these methods in parallel, we were unable to isolate 
+			one particular root cause of the malfunctioning, but taken together, 
+			we would say that the issues were some combination of the challenges 
+			mentioned above. 
+
+			<br><br>
+
+			Another issue that was present throughout much of the project was the random 
+			appearance of white dots on the TFT display. Over time after power-on, pixels 
+			that should have stayed black would become white.The code never 
+			called for white dots to be printed, so we couldn’t isolate the error. Our first 
+			fix to this problem was to write a segment of the screen black every 10 seconds. 
+			However, this was a purely aesthetic fix, which did not remove the underlying
+			problem.
+
+			<br><br>
+
+			Eventually, we realized that putting our sequencer's active-step TFT updates in an ISR 
+			to achieve a constant, fast update at high tempos was the root of the problem. Since
+			we had TFT updates in this ISR, and in a separate thread used to update more slowly-
+			updating parts of the UI, there were many scheduling scenarios in which the serial data
+			sent to the TFT was corrupted. In some instances, this conflict would cause the PIC32
+			to crash entirely. After realizing the origin of our problem, we moved all TFT updates
+			to a single thread. This thread ran at 15-20 fps, and due to the less-frequent update,
+			our sequencer's active-step readout could be jumpy at certain sequence speeds. However, 
+			we gained overall performance by eliminating this potentially fatal stress on the serial
+			data bus.
 		</div>
 
 		<!-- LINK TO TOP OF PAGE -->
