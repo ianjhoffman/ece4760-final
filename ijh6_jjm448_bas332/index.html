@@ -170,7 +170,7 @@
 			variable is used in the DDS ISR to determine whether or not to add the sequence
 			advancing phase accumulator to the step_accum counter. The phase accumulators for
 			each tempo were calculated using tempo_accum_calcs.rb, which can be found in the
-			Commented Program Files section.
+			<a class="external" href="#commented-program">Commented Program Files</a> section.
 
 			<br><br>
 
@@ -181,7 +181,8 @@
 			variables are used as flags in the DDS ISR to determine whether to add or subtract
 			the accumulator. The rise_acc and fall_acc variables for both envelopes are set 
 			using envelope rise/fall phase accumulators calculated in env_bound_accum_calcs.rb, 
-			which can be found in the Commented Program Files section. These accumulators are 
+			which can be found in the <a class="external" href="#commented-program">
+			Commented Program Files</a> section. These accumulators are 
 			blended across the turn of the modal envelope knobs, allowing fades through 
 			different envelope lengths and shapes.
 
@@ -202,26 +203,116 @@
 			Our DDS ISR (Direct Digital Synthesis Interrupt Service Routine) accomplishes
 			all the tasks it needs to very expediently. This is necessary because of the speed
 			at which it is run: 100kHz. In these 400 cycles, with cycles to spare for other
-			threads like the button or TFT threads, 
+			threads like the button, multiplexer, or TFT threads, the procedures executed
+			are as follows:
+
+			<br><br>
+			<ul class="insection-list">
+				<li>
+					Scaling the shape envelope value by its attenuation, then adding it
+					to the wave blend offset and clipping the result if it is too high
+				</li>
+				<li>
+					Getting the two waves within the current wavetable to use in the
+					WAVE_BLEND macro, using bitwise operations on the overall blend
+					value
+				</li>
+				<li>
+					Using the WAVE_BLEND macro to blend between the two waves, using
+					the subtable blend value, the above-calculated table offsets, and
+					the DDS phase accumulator
+				</li>
+				<li>
+					Scaling the calculated sample by the value of the amplitude envelope, 
+					then writing this sample to the DAC
+				</li>
+				<li>
+					Updating the DDS phase accumulator and sequence position
+				</li>
+				<li>
+					Updating the envelopes' values, taking into account each envelope's 
+					rising flags and rise/fall phase accumulators, clipping results if
+					necessary
+				</li>
+				<li>
+					Setting step update flag for TFT thread if the sequencer step changed,
+					so that the UI can reflect this change
+				</li>
+			</ul>
+
+			<br>
+
+			Using integer operations instead of fix16 operations, as well as choosing scaling
+			values to allow division using variable right shift, allowed the DDS ISR to function
+			properly in the small window of time it was allowed.
 
 			<br><br>
 			<h4 class="subsubsection-header"> TFT/User Interface </h4> 
+
 
 
 			<br><br>
 			<h4 class="subsubsection-header"> Multiplexing Input </h4>
 
 
+
 			<br><br>
 			<h4 class="subsubsection-header"> Button Processing </h4>
 
+			The four buttons were processed using a thread which was run at
+			approximately 10Hz. Because of the slow rate of button value capture,
+			we deemed it unnecessary to debounce the buttons. The button thread was,
+			as a result, rather simple. For each button, the previous value of the
+			button was stored. If the newly-read value of the button from its digital
+			input pin was different from the previous value, and this new value signified
+			that the button was being pressed, the data the button controlled would
+			be modified. When writing a new note value, or changing a step's rest
+			state, the button thread would set some flags for the TFT thread to notify
+			it about which step had been changed, allowing the TFT thread to do less
+			work.
 
 			<br><br>
 			<h4 class="subsubsection-header"> Creating Wavetables </h4>
 
+			All of our wavetables were initially designed custom in the VST Plugin 
+			Serum, an advanced wavetable synthesizer with a built-in wavetable 
+			creation tool. After these wavetables were created, the .wav files
+			that represented them were converted to 32-bit signed .raw files using
+			the free audio software, Audacity. The wavetables in Serum initially
+			were represented as 32-bit float, with 512 samples per table. Using 
+			8 waves per table, as we did, this meant that each wavetable had 4096
+			32-bit samples, resulting in around 16KB per table.
+
+			<br><br>
+
+			After being converted into .raw format, each wavetable was converted
+			into a C header file using a custom command-line script, convert.cpp,
+			which can be found in the <a class="external" href="#commented-program">
+			Commented Program Files</a> section. It allows the user to specify the
+			name of the array in which the samples will be placed. We used these
+			array names later in our int *tables array, which contained the four
+			wavetables. The header files containing the wavetables were rather large,
+			and as such have not been included in this report.
 
 			<br><br>
 			<h4 class="subsubsection-header"> Use of unsigned ints instead of fix16 </h4>
+
+			We decided to use unsigned integers to hold all of our synthesis parameters,
+			even ones that would have to be scaled by others. We made this choice mainly
+			to achive speed in the DDS ISR, for better audio fidelity via a higher sample
+			rate and more time for threads to perform their respective tasks. The barrel
+			shift allowed by the PIC32's ALU made division before scaling very fast, which
+			came in handy for crossfading between waveshapes, fading between envelope 
+			keyframes, scaling shape modulation, and scaling the DDS sample by the 
+			amplitude envelope.
+
+			<br><br>
+			<h4 class="subsubsection-header"> Configuring the DAC and ADC </h4>
+
+			The DAC and ADC were configured using code modified from examples on the
+			course website. We put most of our configuration code in two functions,
+			initADC and initDAC, which were both called from the main procedure of our
+			program. We also used some macros for the bitwise ORs of configuration flags.
 
 		</div>
 		<br>
