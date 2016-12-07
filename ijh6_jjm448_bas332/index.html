@@ -249,7 +249,21 @@
 			<br><br>
 			<h4 class="subsubsection-header"> TFT/User Interface </h4> 
 
-			...
+			The intitial sequence state, as well as the general UI format, is drawn to the TFT
+			using the helper function initTFT(), which is called from main. After this point,
+			once threads have been scheduled and the program is fully started, the TFT is 
+			updated 20 times per second, using a dedicated TFT update thread.
+
+			<br><br>
+
+			In the TFT update thread, flags set in the ISR and the other threads allow for
+			updating the sequence state only when necessary. Only steps which have changed
+			will be redrawn, and the red/green selector boxes for selected and active
+			sequence steps will only be moved if their positions have been changed. Copies
+			of all flags which are set in the ISR, such as the old and current step, are 
+			made in the TFT update thread to ensure that their values don't change in between
+			dependent drawing steps. The tempo, note-to-write, and table index are all 
+			rewritten each time the TFT update thread's loop executes.
 
 			<br><br>
 			<h4 class="subsubsection-header"> Multiplexing Input </h4>
