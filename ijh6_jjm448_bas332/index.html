@@ -399,7 +399,12 @@
 			dependent drawing steps. The tempo, note-to-write, and table index are all 
 			rewritten each time the TFT update thread's loop executes.
 
+			<!-- TFT OUTPUT -->
 			<br><br>
+			<h3 class="diagram-label"> User Interface on the TFT Display </h3>
+			<img src="images/user_interface.png" alt="tft user interface" class="diagram-img">
+
+			<br>
 			<h4 class="subsubsection-header"> Multiplexing Input </h4>
 
 			The multiplexing of input through the 1 on-board ADC was done in a dedicated
@@ -728,7 +733,31 @@
 		<h3 class="subsection-header"> Speed and Responsiveness </h3>
 		<div class="subsection-content">
 
-			analysis of speed and responsiveness here
+			Because of compromises we made to keep sample rate high, and relocation of TFT
+			code, our TFT display, the main aspect of our user interface, was not necessarily
+			as responsive as we would have liked. We updated the TFT display at a rate of 20Hz,
+			which was in general undetectable by human perception, but because this frequency could
+			often be too slow our out of phase with the sequencer step progression, the red highlight
+			on the active step could sometimes seem jumpy, as it would transition to a subsequent
+			step in slightly different time intervals to keep up with the sequence. We decided the 
+			degree to which this affected the user experience was minimal and excusable.
+
+			<br><br>
+
+			The multiplexer thread for reading in the 7 knobs was also run at approximately 20Hz, which
+			could cause audible stepping on some controls, especially the wave blend control. Because 20Hz
+			is essentially below most normal humans' ranges of hearing, turning the wave blend knob quickly
+			would not sound like a smooth timbral morph, but instead jumps would be audible each time the
+			multiplexer thread captured a new blend value. As stated above about the TFT display, this reading
+			speed was a necessary compromise in order for our synthesizer to function.
+
+			<br><br>
+
+			Buttons were read in the button thread at a rate of approximately 10Hz. This helped with debouncing 
+			(although that was not the goal of this sample rate), but also caused some noticeable artifacts in 
+			the pressing of buttons. Sometimes, if a button was pressed too quickly, the thread would not capture 
+			the action at all. As a result, to ensure a buttons' associated software action would be taken, buttons 
+			had to be held down for a short period of time.
 
 		</div>
 		<br>
@@ -736,7 +765,34 @@
 		<h3 class="subsection-header"> Accuracy </h3>
 		<div class="subsection-content">
 
-			accuracy writing here
+			There were a few different aspects of our implementation that contributed to the accuracy
+			of the tones and waveshapes we produced, both in terms of fundamental frequency, harmonic 
+			distortion from the original generated wavetables, and spurious harmonics i.e. aliasing. 
+			These factors were:
+
+			<br><br>
+			<ul class="insection-list">
+				<li>
+					DDS ISR sample rate of <b>100kHz</b>
+				</li>
+				<li>
+					Internal bit depth of wavetable samples <b>(32 bits)</b>
+				</li>
+				<li>
+					External bit depth of our DAC <b>(12 bits)</b>
+				</li>
+				<li>
+					Number of samples per waveform <b>(512 samples)</b>
+				</li>
+				<li>
+					Lack of antialiasing procedures such as frequency-dependent resampling
+				</li>
+			</ul>
+			<br>
+
+			asdfdasf
+
+
 
 		</div>
 		<br>
@@ -777,12 +833,12 @@
 			<br><br>
 
 			<h3 class="diagram-label"> Original Project Layout/Design </h3>
-			<img src="images/original-layout.png" alt="original layout" class="diagram-img">
+			<img src="images/original_layout.png" alt="original layout" class="diagram-img">
 
 			<br>
 
 			<h3 class="diagram-label"> Final Project Layout/Design </h3>
-			<img src="images/final-layout.png" alt="final layout" class="diagram-img">
+			<img src="images/final_layout.png" alt="final layout" class="diagram-img">
 
 			Some of the design changes between the intial and final designs were 
 			just logistic changes, such as the two perfboards in the final product rather 
