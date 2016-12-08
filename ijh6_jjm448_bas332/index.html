@@ -785,14 +785,66 @@
 					Number of samples per waveform <b>(512 samples)</b>
 				</li>
 				<li>
+					Rounding of phase increments to nearest integer representation
+				</li>
+				<li>
 					Lack of antialiasing procedures such as frequency-dependent resampling
 				</li>
 			</ul>
 			<br>
 
-			asdfdasf
+			At a DDS ISR sample rate of 100kHz, our highest frequency, C5 (523.25Hz), would only have
+			approximately 191 of its 512 samples played per cycle, a result which, because of the harmonic content in
+			many of our waveforms, led to some aliasing. Had we bandlimited our wavetables using 
+			frequency-dependent resampling of the waves, we could have avoided much of this effect, as 
+			100kHz should be a sampling rate high enough to represent all of these waveforms without aliasing 
+			as long as the appropriate measures are taken. We did not have the resources in our ISR to do this 
+			kind of dynamic resampling, nor the space in memory to do it statically, so we do have some aliasing 
+			in our output, especially at higher frequencies. This can be seen in the FFT of our sine wave at C5, 
+			which is shown below along with a couple other scope captures.
 
+			<br><br>
 
+			<h3 class="diagram-label"> Sine Wave Shape on Oscilloscope </h3>
+			<img src="images/C1_sine_quality.png" alt="sine wave shape" class="diagram-img">
+
+			<br>
+
+			<h3 class="diagram-label"> Sine Wave FFT at C1 (32.70Hz) </h3>
+			<img src="images/C1_sine_scope.png" alt="sine wave FFT, C1" class="diagram-img">
+
+			<br>
+
+			<h3 class="diagram-label"> Sine Wave FFT at C5 (523.25Hz) </h3>
+			<img src="images/C5_sine_scope.png" alt="sine wave FFT, C5" class="diagram-img">
+
+			<br>
+
+			As can be seen in the first of the three images above, the sine wave's shape is pristine, due to our
+			high sample rate and high internal sample bit depth. The internal sample bit depth allows us to do all 
+			sorts of scaling operations on our waveforms, such as crossfading and amplitude enveloping, without losing 
+			any necessary information by the time we send the sample out to the 12-bit DAC.
+
+			<br><br>
+
+			The results of rounding our phase increments to their nearest integer representation (which was necessary 
+			to store them as unsigned integers) can be seen in the slight deviation between our output frequencies for 
+			C1 and C5 and their actual frequencies. In the 2nd image above, the sine wave at C1 appears to have a 
+			frequency of 32.66Hz instead of the actual frequency of 32.70Hz, with a total error of 0.12%. In the third 
+			image above, the sine wave at C5 appears to have a frequency of 522.56Hz instead of the actual frequency 
+			of 523.25Hz, with a total error of 0.13%. As can be seen from these calculations, our frequencies are very 
+			accurate to around 1 part in 1000.
+
+			<br><br>
+
+			Our signal-to-noise ratio (noise here includes spurious frequencies i.e. aliasing) was also very acceptable.
+			In the FFT capture of our sine wave at C1 (2nd image above), there are no obvious aliasing frequencies among 
+			the garbage at the noise floor, but the signal-to-noise ratio is (as denoted by the cursors) approximately 
+			54dB. In the FFT capture of our sine wave at C5 (3rd image above), there is a fairly obvious aliasing frequency 
+			sticking out above the rest of the noise floor, so we set our lower cursor there. At this frequency (albeit 
+			with our wave having the least harmonic content) we had around 46dB of difference between our fundamental 
+			and noise/aliasing. We found these results to be acceptible, and most of the time when using our synthesizer, 
+			any small aliasing effects are hardly noticeable.
 
 		</div>
 		<br>
